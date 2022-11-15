@@ -6,6 +6,7 @@ FENETRE_LARGEUR = 800
 FENETRE_HAUTEUR = 600
 
 SOL_HAUTEUR = 500
+LIMITE_MORT = 575
 
 X = 0
 Y = 1
@@ -24,7 +25,7 @@ def affiche_objet(fenetre, objet):
    pygame.draw.circle(fenetre, (255,0,0), objet['pos'], objet['rad'])
 
 def newPos(objet):
-   global temps_precedent
+   global temps_precedent, fini
    delai = temps_maintenant - temps_precedent
    
    objet['vit'][X] = objet['vit'][X] + objet['acc'][X] * delai
@@ -34,7 +35,10 @@ def newPos(objet):
    objet['pos'][Y] = int(objet['pos'][Y] + objet['vit'][Y] * delai)
  
    temps_precedent = temps_maintenant
-
+   
+   
+   if objet['pos'][Y] + objet['rad'] > LIMITE_MORT :
+      fini = True
    if objet['pos'][Y] + objet['rad'] > SOL_HAUTEUR :
       objet['pos'][Y] = SOL_HAUTEUR - objet['rad']
       objet['vit'][Y] = 0
