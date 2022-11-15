@@ -7,6 +7,9 @@ NOIR = (0, 0, 0)
 FENETRE_LARGEUR = 800
 FENETRE_HAUTEUR = 600
 
+FENETRE_MARGE_EXTERNE = 200
+FENETRE_MARGE_INTERNER = 50
+
 SOL_HAUTEUR = 370
 SOL_LARGEUR = 120
 
@@ -27,6 +30,9 @@ def traite_entrees():
     for evenement in pygame.event.get():
         if evenement.type == pygame.QUIT:
             fini = True
+            
+def repere_vers_pygame(position):
+    return (position[0], FENETRE_HAUTEUR - position[1])
 
 def nouvelleScene():
     return {
@@ -49,33 +55,93 @@ def nouvelleEntite(nom, image):
     return {
         "nom": nom,
         "visible": False,
+        "taille": (0,0),
         "position": [0, 0],
         "vitesse": [0, 0],
         "acceleration": [0, 0],
+        "dernierTemps": 0,
         "image": image,
         "angleRotation": 0
     }
 
-def reveillerEntite(scene, entite):
+def nombreElementScene(scene):
+    return len(scene["entites"])
+
+def derniereEntite(scene):
+    nbr = nombreElementScene(scene)
+    
+    if nbr > 0:
+        return scene["entites"][nbr-1]
+    return None
+
+def premiereEntite(scene):
+    if nombreElementScene(scene) > 0:
+        return scene["entites"][0]
+    return None        
+
+def reveillerEntite(entite):
     entite["visible"] = True
     return entite
 
-def supprimerEntite(scene, entite):
+def endormirEntite(entite):
     entite["visible"] = False
     return entite
 
+def generer_entite(position_precedente, taille_precedente):
+    global IMAGE_SOL
+    
+    entite = nouvelleEntite("sol", IMAGE_SOL)
+    entite["position"][0] = position_precedente[0] + taille_precedente[0]
+    entite["position"][1] = 100
+    entite["taille"] = (SOL_LARGEUR, SOL_HAUTEUR)
+    entite["dernierTemps"] = pygame.time.get_ticks()
+    
+    return entite
+
+def remplirScene(scene):
+    nombre_elements = nombreElementScene(scene)
+    
+    if nombre_elements > 0:
+        while premiereEntite(scene).get("position")[0] < -FENETRE_MARGE_EXTERNE:
+            scene["entites"].remove(0)
+            nombre_elements -= 1
+        
+    derniere_position = (0,0)
+    derniere_taille = (0,0)
+    
+    if nombre_elements > 0:
+        dernier = derniereEntite(scene)
+        derniere_position = dernier.get("position") 
+        derniere_taille = dernier.get("taille")
+    
+    while derniere_position[0] + derniere_taille[0] < FENETRE_LARGEUR + FENETRE_MARGE_EXTERNE:
+        entite = reveillerEntite(generer_entite(derniere_position, derniere_taille))
+        ajouterEntite(scene, entite)
+        
+        derniere_position = entite.get("position")
+        derniere_taille = entite.get("taille")
+
 def miseAJourEntite(scene):
-    pass
+    nbr = nombreElementScene(scene)
+    
+    if nbr > 0:
+        pass
 
 def afficheEntite(scene):
     global fenetre
     entites = scene["entites"]
     
-    x = 0
-    
     for entite in entites:
-        fenetre.blit(entite["image"], (x, 400))
-        x += SOL_LARGEUR
+        fenetre.blit(entite["image"], repere_vers_pygame(entite["position"]))
+    
+def afficherEcranDeJeu():
+    global scene
+    
+    #miseAJourEntite(scene)
+    remplirScene(scene)
+    afficherScene(scene, IMAGE_SCENE)
+    afficheEntite(scene)
+    
 
 # Initialisation
 pygame.init()
@@ -95,22 +161,12 @@ scene = nouvelleScene()
 horloge = pygame.time.Clock()
 temps_depart = pygame.time.get_ticks()
 
-ajouterEntite(scene, nouvelleEntite("sol", IMAGE_SOL))
-ajouterEntite(scene, nouvelleEntite("sol", IMAGE_SOL))
-ajouterEntite(scene, nouvelleEntite("sol", IMAGE_SOL))
-ajouterEntite(scene, nouvelleEntite("sol", IMAGE_SOL))
-ajouterEntite(scene, nouvelleEntite("sol", IMAGE_SOL))
-ajouterEntite(scene, nouvelleEntite("sol", IMAGE_SOL))
-ajouterEntite(scene, nouvelleEntite("sol", IMAGE_SOL))
-
 while not fini:
     traite_entrees()
     
     fenetre.fill(NOIR)
     
-    afficherScene(scene, IMAGE_SCENE)
-    miseAJourEntite(scene)
-    afficheEntite(scene)
+    afficherEcranDeJeu()
     
     pygame.display.flip()
     horloge.tick(images_par_seconde)
