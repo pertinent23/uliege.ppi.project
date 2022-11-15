@@ -18,7 +18,7 @@ def traite_entrees() :
          fini = True
       if evenement.type == pygame.KEYDOWN:
          if evenement.key == pygame.K_UP:
-            Obj['vit'][Y] = -0.5
+            saute(Obj)
 
 def affiche_objet(fenetre, objet):
    pygame.draw.circle(fenetre, (255,0,0), objet['pos'], objet['rad'])
@@ -45,6 +45,10 @@ def newPos(objet):
       objet['pos'][X] = FENETRE_LARGEUR
 
 Obj = {'pos':[400,300], 'vit':[0,0], 'acc':[0,0.001], 'rad':25}
+
+def saute(objet):
+   if objet['pos'][Y] == SOL_HAUTEUR - objet['rad']:
+      Obj['vit'][Y] = -0.5
 
 
 pygame.init()
