@@ -6,7 +6,7 @@ FENETRE_LARGEUR = 800
 FENETRE_HAUTEUR = 600
 
 BALE_LARGEUR = 60
-BALE_HAUTEUR = 51
+BALE_HAUTEUR = 60
 
 
 SOL_HAUTEUR = 500
@@ -145,7 +145,6 @@ def position(entite):
 def ajoutePose(entite, nom, image):
     entite['poses'][nom] = image
 
-
 def prendsPose(entite, pose):
     entite['imageAffichee'] = entite['poses'][pose]
     visible(entite)
@@ -239,24 +238,17 @@ def newPos(objet):
    if objet['position'][Y] + BALE_HAUTEUR > SOL_HAUTEUR :
       objet['position'][Y]= SOL_HAUTEUR - BALE_HAUTEUR
       objet['vitesse'][Y]=0
-      
-
-   if objet['position'][X] > FENETRE_LARGEUR :
-      objet['position'][X] = 0
-   elif objet['position'][X] < 0 :
-      objet['position'][X] = FENETRE_LARGEUR
 
 
 
 
 def saute(objet):
-   if objet['position'][Y] == SOL_HAUTEUR - BALE_HAUTEUR:
-      set_vitesse(objet,0,-0.5)
+   set_vitesse(objet,0,-500)
 
 
 
 bale = nouvelleEntite()
-set_acceleration(bale,0,0.001)
+set_acceleration(bale,0,1000)
 place(bale,400,300)
 
 for nom_image, nom_fichier in (('BALE_1','ball.png'),
@@ -275,9 +267,11 @@ ajouteMouvement(animation, mouvement('BALE_2', 80))
 ajouteMouvement(animation, mouvement('BALE_3', 80))
 ajouteMouvement(animation, mouvement('BALE_4', 80))
 
-                              
 
 ajouteAnimation(bale, 'roule', animation)
+
+
+
 
 scene = [bale]
 commenceAnimation(bale, 'roule', 0)
@@ -286,20 +280,14 @@ commenceAnimation(bale, 'roule', 0)
 fini = False
 temps = pygame.time.Clock()
 
-temps_precedent = 0
 while not fini:
-
-
     traite_entrees()
     
     miseAJour(scene)
 
     fenetre.fill(BLEU_CIEL)
 
-    temps_maintenant = pygame.time.get_ticks()
-
     affiche(scene, fenetre)
-    newPos(bale)
     
 
     pygame.display.flip()
