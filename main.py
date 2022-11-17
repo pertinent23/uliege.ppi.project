@@ -1,10 +1,12 @@
 import pygame
+import random
 import math
 
 # Constantes
 
 TYPE_SOL = "sol"
 TYPE_BALLE = "balle"
+TYPE_EAU = "eau"
 
 NOIR = (0, 0, 0)
 
@@ -15,17 +17,23 @@ FENETRE_MARGE_EXTERNE = 200
 FENETRE_MARGE_INTERNER = 50
 
 BALLE_RAYON = 30
-BALLE_COLLISION_MARGE = 45
+BALLE_POSITION = FENETRE_LARGEUR // 4
+BALLE_TOUCHE_MARGE = 2
 
 SOL_HAUTEUR = 370
 SOL_LARGEUR = 120
-SOL_MARGE = 5
+SOL_MARGE_HORIZONTALE = 8
+SOL_MARGE_VERTICALE = 40
 
-SOL_POSITION_MINIMALE = - SOL_HAUTEUR + SOL_MARGE * 20
+SOL_POSITION_MINIMALE = - SOL_HAUTEUR + SOL_MARGE_HORIZONTALE * 20
 SOL_POSITION_MAXIMALE = 0
 
-VITESSE_HORIZONTALE = 0.08 # px/s
-VITESSE_VERTICALE = 1.1 # px/s
+EAU_HAUTEUR = 368
+EAU_LARGEUR = 120
+EAU_INTERVAL = 5000
+
+VITESSE_HORIZONTALE = 0.2 # px/s
+VITESSE_VERTICALE = 0.7 # px/s
 
 ACCELERATION_GRAVITATIONNELLE = 0.002 # px/s/s
 ACCELERATION_HORIZONTALE = 0.000008
@@ -40,6 +48,10 @@ images_par_seconde = 25
 # Fin Paramètres
 
 # Fonctions 
+def rectangle(entite):
+    x, y = positionEntite(entite)
+    return imageEntite(entite).get_rect().move(x, y)
+
 def repere_vers_pygame(position, taille):
     return (position[0], FENETRE_HAUTEUR - position[1] - taille[1])
 
@@ -54,8 +66,7 @@ def preprareScene(scene, background):
     fenetre.blit(background, (0,0))
     
 def afficherScene(scene, background):
-    preprareScene(scene, background)
-    
+    preprareScene(scene, background)    
 
 def ajouterEntite(scene, entitee):
     scene["entites"].append(entitee)
@@ -65,6 +76,9 @@ def listEntite(scene):
 
 def estVisible(entite):
     return entite["visible"]
+
+def estEntite(scene, entite):
+    return listEntite(scene).count(entite) != 0
 
 def modifierTaille(entite, taille):
     entite["taille"] = taille
@@ -140,9 +154,17 @@ def progresserAnimation(entite):
     nbr_poses = nombrePoses(entite)
     
     if nbr_poses > 0:
-        actuelle += 1;
+        vx = vitesseEntite(entite)[0] + VITESSE_HORIZONTALE
+        
+        if vx > 0:
+            if vx > VITESSE_HORIZONTALE:
+                actuelle += 2;
+            else:
+                actuelle += 1;
+            
         if actuelle >= nbr_poses:
             actuelle = 0
+            
         modifierPoseActuelle(entite, actuelle)
         modifierImage(entite, listPoses(entite)[actuelle])
             
@@ -207,29 +229,12 @@ def endormirEntite(entite):
     entite["visible"] = False
     return entite
 
-def entite_a_position(scene, x, types=[], myself=None):
-    nbr = nombreElementScene(scene)
-    result = list()
-    
-    if nbr > 0:
-        entites = listEntite(scene)
-        i = 0;
-
-        while i < nbr and positionEntite(entites[i])[0] <= x:
-            if positionEntite(entites[i])[0] <= x and positionEntite(entites[i])[0] + tailleEntite(entites[i])[0] >= x:
-                if entites[i] is not myself:
-                    if len(types) == 0:
-                        result.append(entites[i])
-                    else:
-                        if types.count(typeEntite(entites[i])) != 0:
-                            result.append(entites[i])
-            i += 1
-            
-    return result
+def collision_avec(entite, entite_list = []):
+    return rectangle(entite).collidelistall([rectangle(o) for o in entite_list])
         
 
 def creerSol(position):
-    entite = nouvelleEntite("sol", IMAGE_SOL)
+    entite = nouvelleEntite(TYPE_SOL, IMAGE_SOL)
     
     modifierPosition(entite, position)
     modifierTaille(entite, (SOL_LARGEUR, SOL_HAUTEUR))
@@ -239,12 +244,56 @@ def creerSol(position):
     
     return entite
 
-def generer_entite(position_precedente, taille_precedente):
-    global IMAGE_SOL
+def creerEau(position):
+    entite = nouvelleEntite(TYPE_EAU, IMAGE_EAU)
     
-    return creerSol((position_precedente[0] + taille_precedente[0] - SOL_MARGE, SOL_POSITION_MINIMALE))
+    modifierPosition(entite, position)
+    modifierTaille(entite, (EAU_LARGEUR, EAU_HAUTEUR))
+    modifierAcceleration(entite, (0,0))
+    modifierVitesse(entite, (-VITESSE_HORIZONTALE, 0))
+    modifierDernierTemps(entite, pygame.time.get_ticks())
+    
+    return entite
 
-def remplirScene(scene):
+def generer_hauteur(position_y_precedente, hauteur_precedente, type_precedente, type_actuelle):
+    hauteur = 0
+    
+    marge_hauter = SOL_POSITION_MAXIMALE - position_y_precedente
+    nombre_etape = marge_hauter // SOL_MARGE_VERTICALE
+    marge = SOL_MARGE_VERTICALE * random.randint(nombre_etape//5, nombre_etape//3)
+    
+    if type_actuelle == TYPE_EAU:
+        hauteur = position_y_precedente + hauteur_precedente - EAU_HAUTEUR
+    else:
+        if type_actuelle == TYPE_SOL:
+            if type_precedente == TYPE_EAU:
+                hauteur = position_y_precedente + hauteur_precedente - SOL_HAUTEUR + marge
+            else:
+                hauteur = SOL_POSITION_MINIMALE + marge
+    
+    return hauteur
+
+def generer_entite(scene, position_precedente, taille_precedente, maintenant):
+    global IMAGE_SOL, score, dernier_temps_eau
+    
+    x = position_precedente[0] + taille_precedente[0] - SOL_MARGE_HORIZONTALE
+    hauteur = 0
+    
+    if score > BALLE_POSITION / 2:
+        if score > BALLE_POSITION:
+            
+            if not dernier_temps_eau or maintenant - dernier_temps_eau > EAU_INTERVAL:
+                dernier_temps_eau = maintenant
+                hauteur = generer_hauteur(position_precedente[1], taille_precedente[1], typeEntite(derniereEntite(scene)), TYPE_EAU)
+                
+                return creerEau((x, hauteur))
+            
+        hauteur = generer_hauteur(position_precedente[1], taille_precedente[1], typeEntite(derniereEntite(scene)), TYPE_SOL)
+        return creerSol((x, hauteur))
+    
+    return creerSol((x, SOL_POSITION_MINIMALE))
+
+def remplirScene(scene, maintenant):
     nombre_elements = nombreElementScene(scene)
     
     if nombre_elements > 0:
@@ -257,7 +306,7 @@ def remplirScene(scene):
     derniere_position = (0,0)
     derniere_taille = (0,0)
     dernier = None
-    require = [TYPE_SOL]
+    require = [TYPE_SOL, TYPE_EAU]
     
     if nombre_elements > 0:
         dernier = derniereEntite(scene, require)
@@ -266,7 +315,7 @@ def remplirScene(scene):
             derniere_taille = tailleEntite(dernier)
     
     while derniere_position[0] + derniere_taille[0] < FENETRE_LARGEUR + FENETRE_MARGE_EXTERNE:
-        entite = reveillerEntite(generer_entite(derniere_position, derniere_taille))
+        entite = reveillerEntite(generer_entite(scene, derniere_position, derniere_taille, maintenant))
         ajouterEntite(scene, entite)
         
         dernier = derniereEntite(scene, require)
@@ -286,28 +335,28 @@ def mru_position(position, vitesse, acceleration, dt):
     
     return (x0 + vx0 * dt + 0.5 * ax * dt ** 2, y0 + vy0 * dt  + 0.5 * ay * dt ** 2)
 
-def miseAJourEntite(scene, maintenant):
+def miseAJourEntite(scene, maintenant, change_pose):
     nbr = nombreElementScene(scene)
     dt = 0
     
     if nbr > 0:
         for entite in listEntite(scene):
             dt = maintenant - dernierTempsEntite(entite)
-            if dt > 0:
-                position = positionEntite(entite)
-                vitesse = vitesseEntite(entite)
-                acceleration = accelerationEntite(entite)
+            position = positionEntite(entite)
+            vitesse = vitesseEntite(entite)
+            acceleration = accelerationEntite(entite)
+            
+            vitesse = mru_vitesse(vitesse, acceleration, dt)
+            position = mru_position(position, vitesse, acceleration, dt)
+            
+            modifierVitesse(entite, vitesse)
+            modifierPosition(entite, position)
+            
+            if estAnime(entite) and change_pose:
+                progresserAnimation(entite)
+            modifierDernierTemps(entite, maintenant) 
                 
-                vitesse = mru_vitesse(vitesse, acceleration, dt)
-                position = mru_position(position, vitesse, acceleration, dt)
-                
-                modifierVitesse(entite, vitesse)
-                modifierPosition(entite, position)
-                
-                if estAnime(entite):
-                    progresserAnimation(entite)
-                    
-                modifierDernierTemps(entite, maintenant)    
+    collisionBalle()   
             
 
 def afficheEntite(scene):
@@ -322,23 +371,12 @@ def creerImage(path, taille):
     global fenetre
     
     return pygame.transform.scale(pygame.image.load(path).convert_alpha(fenetre), taille) 
-
-def peutSauter(entite, marge_de_collision):
-    global scene
-    
-    x = positionEntite(entite)[0]
-    entites = entite_a_position(scene, x, [TYPE_SOL], entite)
-    
-    if len(entites) != 1:
-        return False
-    
-    return estPoseSur(entite, entites[0], marge_de_collision)
     
 
 def faireSauterBalle():
-    global balle
+    global balle, peut_sauter
     
-    if peutSauter(balle, BALLE_COLLISION_MARGE):
+    if peut_sauter:
         vx = vitesseEntite(balle)[0]
         ax = accelerationEntite(balle)[0]
 
@@ -353,26 +391,86 @@ def estPoseSur(entite1, entite2, marge):
         return True
     return False
 
+def peutTomber(entite1, entite2):
+    # Retourne 0 si l'entite 1 ne peut pas tomber
+    # Retourne -1 si l'entite peut tomber par l'avant
+    # Retourne 1 si l'entite peut tomber par l'arrière
+    
+    x1 = positionEntite(entite1)[0]
+    w1 = tailleEntite(entite1)[0]
+    
+    x2 = positionEntite(entite2)[0]
+    w2 = tailleEntite(entite2)[0]
+    
+    if x1 < x2:
+        if x1 + w1 - x2 < w1 / 2:
+            return -1
+    elif x2 + w2 < x1 + w1:
+        if x1 + w1 - x2 - w2 > w1 / 2:
+            return 1
+    return 0;
+
 def collisionBalle():
-    global balle
+    global balle, scene, peut_sauter
     
-    xb = positionEntite(balle)[0]
-    vy = vitesseEntite(balle)[1]
-    entites = entite_a_position(scene, xb, [TYPE_SOL], balle)
+    entites = [item for item in listEntite(scene) if item != balle]
+    collisions = collision_avec(balle, entites)
+    nbr_collision = -1
+    
     est_au_sol = False
+    est_sur_eau = False
     
-    for entite in entites:
-        
-        if estPoseSur(balle, entite, BALLE_COLLISION_MARGE):
-            if typeEntite(entite) == TYPE_SOL:
-                est_au_sol = True
-                if vy != 0:
-                    modifierPosition(balle, (xb, positionEntite(entite)[1]+tailleEntite(entite)[1]))
-                    modifierVitesse(balle, (0,0))
-                    modifierAcceleration(balle, (0,0))
-    
-    if not est_au_sol:
+    if len(collisions) != 0:
+        for collision in collisions:
+            xb = positionEntite(balle)[0]
+            vy = vitesseEntite(balle)[1]
+            entite = entites[collision]
+
+            if estPoseSur(balle, entite, BALLE_TOUCHE_MARGE):
+                if typeEntite(entite) == TYPE_SOL:
+                    est_au_sol = peut_sauter  = True
+                    directtion_chute = peutTomber(balle, entite)
+                    
+                    if vy < 0:
+                        modifierPosition(balle, (xb, positionEntite(entite)[1]+tailleEntite(entite)[1]-BALLE_TOUCHE_MARGE))
+                        modifierVitesse(balle, (0,0))
+                        modifierAcceleration(balle, (0,0))
+                    else:
+                        if positionEntite(balle)[0] < BALLE_POSITION:
+                            modifierVitesse(balle, (VITESSE_HORIZONTALE, vitesseEntite(balle)[1]))
+                        else:
+                            modifierVitesse(balle, (0, vitesseEntite(balle)[1]))
+                        
+                    if directtion_chute and ((directtion_chute < 0 and nbr_collision > 0) or nbr_collision + 1 == len(collisions)):
+                        modifierVitesse(balle, (VITESSE_HORIZONTALE*directtion_chute, vitesseEntite(balle)[1]))
+                        if not est_sur_eau:
+                            modifierAcceleration(balle, (0, -ACCELERATION_GRAVITATIONNELLE))
+                    elif positionEntite(balle)[0] < BALLE_POSITION:
+                        modifierVitesse(balle, (VITESSE_HORIZONTALE, vitesseEntite(balle)[1]))
+                elif typeEntite(entite) == TYPE_EAU:
+                    if (vy < 0 and not peutTomber(balle, entite)) or not peutTomber(balle, entite):
+                        est_sur_eau = True
+                        modifierPosition(balle, (xb, positionEntite(entite)[1]+tailleEntite(entite)[1]-BALLE_TOUCHE_MARGE))
+                        modifierVitesse(balle, (0,0))
+                        modifierAcceleration(balle, (0,0))
+                        
+                        if positionEntite(entite)[0] - BALLE_TOUCHE_MARGE <= xb:
+                            modifierVitesse(balle, (-VITESSE_HORIZONTALE,0))
+            else:
+                if typeEntite(entite) == TYPE_SOL and not est_sur_eau:
+                    direction_vitesse = 0
+                    if positionEntite(balle)[0] < positionEntite(entite)[0]:
+                        direction_vitesse = -1
+
+                    modifierVitesse(balle, (VITESSE_HORIZONTALE*direction_vitesse, vitesseEntite(balle)[1]))
+                
+            if not est_au_sol and not est_sur_eau:
+                modifierAcceleration(balle, (0, -ACCELERATION_GRAVITATIONNELLE))
+                peut_sauter = False
+            nbr_collision += 1
+    else:
         modifierAcceleration(balle, (0, -ACCELERATION_GRAVITATIONNELLE))
+        peut_sauter = False
 
 def createBalleImage(path):   
     return creerImage(path, (BALLE_RAYON*2, BALLE_RAYON*2))
@@ -380,10 +478,10 @@ def createBalleImage(path):
 def creerBalle():
     global IMAGE_BALLE
     
-    balle = nouvelleEntite("balle", IMAGE_BALLE)
+    balle = nouvelleEntite(TYPE_BALLE, IMAGE_BALLE)
     
     modifierTaille(balle, (BALLE_RAYON*2, BALLE_RAYON*2))
-    modifierPosition(balle, (100, SOL_POSITION_MINIMALE + SOL_HAUTEUR))
+    modifierPosition(balle, (BALLE_POSITION // 2, SOL_POSITION_MINIMALE + SOL_HAUTEUR - VITESSE_VERTICALE))
     modifierVitesse(balle, (0,0))
     modifierAcceleration(balle, (0,0))
     modifierDernierTemps(balle, pygame.time.get_ticks())
@@ -408,19 +506,28 @@ def creerBalle():
     return reveillerEntite(balle);
     
 def afficherEcranDeJeu(maintenant):
-    global scene, balle
+    global scene, balle, dernier_temps_jeux, score, enJeu, fini, temps_depart
     
     if enJeu:
         commencerAnimation(balle)
-        miseAJourEntite(scene, maintenant)
-        collisionBalle()
+        change_pose = True
+        
+        for t in range(temps_depart, maintenant+1):
+            miseAJourEntite(scene, t, change_pose)
+            change_pose = False
+        
+        score += (maintenant - dernier_temps_jeux) * VITESSE_HORIZONTALE
+        dernier_temps_jeux = maintenant
     
-    remplirScene(scene)
+    if not estEntite(scene, balle):
+        fini = True
+    
+    remplirScene(scene, maintenant)
     afficherScene(scene, IMAGE_SCENE)
     afficheEntite(scene)
     
 def traite_entrees():
-    global fini, enJeu
+    global fini, enJeu, dernier_temps_jeux
     
     for evenement in pygame.event.get():
         if evenement.type == pygame.QUIT:
@@ -428,6 +535,7 @@ def traite_entrees():
         elif evenement.type == pygame.KEYDOWN:
             if not enJeu:
                 enJeu = True  
+                dernier_temps_jeux = pygame.time.get_ticks()
             else:
                 if evenement.key == pygame.K_SPACE:
                     faireSauterBalle()
@@ -436,9 +544,10 @@ def traite_entrees():
 pygame.init()
 
 fenetre = pygame.display.set_mode(dimensions_fenetre)
-pygame.display.set_caption( "Bounce Tales" )
+pygame.display.set_caption("Bounce Tales")
 
 IMAGE_SOL = creerImage("images/ground.png", (SOL_LARGEUR, SOL_HAUTEUR))
+IMAGE_EAU = creerImage("images/water.png", (EAU_LARGEUR, EAU_HAUTEUR))
 IMAGE_SCENE = creerImage("images/trees-7191822_1280.png", (FENETRE_LARGEUR, FENETRE_HAUTEUR))
 IMAGE_BALLE = createBalleImage("images/ball/ball.0.png")
 IMAGE_BALLE_30_DEG = createBalleImage("images/ball/ball.30.png")
@@ -461,10 +570,15 @@ fini = False
 enJeu = False
 scene = nouvelleScene()
 balle = creerBalle()
+peut_sauter = False
+score = 0 #equivalent à la distance parcouru
 horloge = pygame.time.Clock()
 temps_depart = pygame.time.get_ticks()
+dernier_temps_jeux = pygame.time.get_ticks()
+dernier_temps_eau = None
 
 ajouterEntite(scene, balle)
+random.seed()
 
 while not fini:
     traite_entrees()
@@ -474,6 +588,8 @@ while not fini:
     maintenant = pygame.time.get_ticks()
     
     afficherEcranDeJeu(maintenant)
+    
+    temps_depart = maintenant
     
     pygame.display.flip()
     horloge.tick(images_par_seconde)
