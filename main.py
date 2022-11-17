@@ -7,13 +7,15 @@ NOIR = (0, 0, 0)
 FENETRE_LARGEUR = 800
 FENETRE_HAUTEUR = 600
 
-FENETRE_MARGE_EXTERNE = 200
+FENETRE_MARGE_EXTERNE = 150
 FENETRE_MARGE_INTERNE = 50
 
 SOL_Y = 500
 
 SOL_HAUTEUR = 370
 SOL_LARGEUR = 120
+
+SOL_MARGE = 5
 
 BALE_LARGEUR = 60
 BALE_HAUTEUR = 60
@@ -77,6 +79,9 @@ def taille(entite):
     return entite["taille"]
 
 
+def reveille(entite):
+    entite["momentDeplacement"] = pygame.time.get_ticks()
+
 def ajoutePose(entite, nom, image):
     entite['poses'][nom] = image
 
@@ -96,6 +101,8 @@ def deplace(entite, maintenant):
     # mise à jour position
     entite['position'][0] += entite['vitesse'][0] * dt
     entite['position'][1] += entite['vitesse'][1] * dt
+    # check collision
+    collision_balle_sol(scene)
     # mise à jour moment de déplacement
     entite['momentDeplacement'] = maintenant
 
@@ -160,9 +167,11 @@ def premiereEntite(scene):
 
 def generer_sol(position):
     entite = nouvelleEntite("sol")
+    reveille(entite)
     ajoutePose(entite, 'Sol', IMAGE_SOL)
     prendsPose(entite, 'Sol')
-    place(entite, position, SOL_Y)
+    place(entite, position - SOL_MARGE, SOL_Y)
+    set_vitesse(entite, -100, 0)
     set_taille(entite, SOL_LARGEUR, SOL_HAUTEUR)
     
     
@@ -186,13 +195,13 @@ def updateSol(scene):
     if len(sols) > 0:
         while position(sols[0])[0] < -FENETRE_MARGE_EXTERNE:
             scene["entites"].remove(sols[0])
-            sols.remove(0)
+            sols.remove(sols[0])
 
     derniere_position = (0,0)
     derniere_taille = (0,0)
  
     if len(sols) > 0:
-        dernier = sols[-1]
+        dernier = sols[len(sols)-1]
         derniere_position = position(dernier) 
         derniere_taille = taille(dernier)
 
@@ -205,6 +214,57 @@ def updateSol(scene):
         derniere_taille = taille(entite)
 
 #### Fin Sol ####
+
+#### Balle ####
+
+def creation_balle():
+    balle = nouvelleEntite("balle")
+    set_acceleration(balle,0,1000)
+    place(balle,100,300)
+    set_taille(balle, BALE_LARGEUR, BALE_HAUTEUR)
+
+    degre = 0
+    change = 1
+    for imageNum in range(16):
+        chemin = 'images/ball/ball.' + str(degre) + '.png'
+        image = load_image(fenetre, chemin, taille(balle))
+        nom_image = 'BALLE_' + str(imageNum)
+        ajoutePose(balle, nom_image, image)
+
+        # change entre 0 et 1 à chaque nombre impair
+        change = (change + (imageNum % 2)) % 2
+
+
+        degre = degre + 15 + (15 * change)
+    
+    animation = nouvelleAnimation()
+    for imageNum in range(16):
+        nom_image = 'BALLE_' + str(imageNum)
+        ajouteMouvement(animation, mouvement(nom_image, 30))
+
+    ajouteAnimation(balle, 'roule', animation)
+
+    return balle
+
+
+def get_balle(scene):
+    entites = acteurs(scene)
+
+    for entite in entites:
+        if entite["nom"] == "balle":
+            return entite
+
+def collision_balle_sol(scene):
+    sols = get_sol(scene)
+    balle = get_balle(scene)
+
+    for sol in sols:
+        if se_touchent_selon(balle, sol, 0) :
+            if position(balle)[1] + taille(balle)[1] > position(sol)[1]:
+                place(balle, position(balle)[0], position(sol)[1] - taille(balle)[1])
+                set_vitesse(balle, balle["vitesse"][0], 0)
+
+#### Fin Balle ####
 
 ##### Définition MOUVEMENT #####
 
@@ -300,33 +360,15 @@ def miseAJour(scene):
     for objet in acteurs(scene):
         deplace(objet, maintenant)
 
-
-def creation_balle():
-    balle = nouvelleEntite("balle")
-    set_acceleration(balle,0,1000)
-    place(balle,100,300)
-
-    for nom_image, nom_fichier in (('BALE_1','ball.png'),
-                               ('BALE_2','ball_30.png'),
-                               ('BALE_3','ball_60.png'),
-                               ('BALE_4','ball_90.png')):
-        chemin = 'images/' + nom_fichier
-        image = load_image(fenetre, chemin, (BALE_LARGEUR, BALE_HAUTEUR))
-        ajoutePose(balle, nom_image, image)
-    
-    animation = nouvelleAnimation()
-    ajouteMouvement(animation, mouvement('BALE_1', 80))
-    ajouteMouvement(animation, mouvement('BALE_2', 80))
-    ajouteMouvement(animation, mouvement('BALE_3', 80))
-    ajouteMouvement(animation, mouvement('BALE_4', 80))
-
-    ajouteAnimation(balle, 'roule', animation)
-
-    return balle
-
 def saute(objet):
-    set_vitesse(objet, 0, -500)
+    if objet["vitesse"][1] == 0:
+        set_vitesse(objet, 0, -500)
 
+def se_touchent_selon(objet, mur, dim):
+    if position(objet)[dim] < position(mur)[dim] + taille(mur)[dim] or position(objet)[dim] + taille(objet)[dim] > position(mur)[dim]:
+        return True
+    else:
+        return False
 
 def afficherBack(fenetre, background):
     fenetre.blit(background, (0,0))
@@ -357,6 +399,8 @@ def repere_vers_pygame(position):
 def load_image(fenetre, chemin, dimensions):
     IMAGE = pygame.image.load(chemin).convert_alpha(fenetre)
     return pygame.transform.scale(IMAGE, dimensions)
+
+
 
 #### Fin Fonctions ####
 
