@@ -9,6 +9,8 @@ TYPE_BALLE = "balle"
 TYPE_EAU = "eau"
 
 NOIR = (0, 0, 0)
+BLANC = (255, 255, 255)
+JAUNE = (255, 200, 0)
 
 FENETRE_LARGEUR = 1000
 FENETRE_HAUTEUR = 600
@@ -17,7 +19,7 @@ FENETRE_MARGE_EXTERNE = 200
 FENETRE_MARGE_INTERNER = 50
 
 BALLE_RAYON = 30
-BALLE_POSITION = FENETRE_LARGEUR // 4
+BALLE_POSITION = FENETRE_LARGEUR // 3
 BALLE_TOUCHE_MARGE = 2
 
 SOL_HAUTEUR = 370
@@ -25,25 +27,35 @@ SOL_LARGEUR = 120
 SOL_MARGE_HORIZONTALE = 8
 SOL_MARGE_VERTICALE = 40
 
-SOL_POSITION_MINIMALE = - SOL_HAUTEUR + SOL_MARGE_HORIZONTALE * 20
+SOL_POSITION_MINIMALE = - SOL_HAUTEUR + SOL_MARGE_VERTICALE * 2
 SOL_POSITION_MAXIMALE = 0
 
 EAU_HAUTEUR = 368
 EAU_LARGEUR = 120
-EAU_INTERVAL = 5000
+EAU_POSITION_MINIMALE = - EAU_HAUTEUR + SOL_MARGE_VERTICALE * 2
+EAU_POSITION_MAXIMALE = 0
+EAU_INTERVAL = 15000
 
 VITESSE_HORIZONTALE = 0.2 # px/s
-VITESSE_VERTICALE = 0.7 # px/s
+VITESSE_VERTICALE = 0.6 # px/s
 
 ACCELERATION_GRAVITATIONNELLE = 0.002 # px/s/s
-ACCELERATION_HORIZONTALE = 0.000008
+ACCELERATION_HORIZONTALE = 0.0008
+
+TEMPS_DE_TOUCHE_MAXIMALE = 150
+
+TABLEAU_DE_BORD_LARGEUR = 100
+TABLEAU_DE_BORD_HAUTEUR = 25
+TABLEAU_DE_BORD_MARGE = 3
+TABLEAU_DE_BORD_X = 100
+TABLEAU_DE_BORD_Y = 13
 
 # Fin Constantes
 
 # Paramètres
 
 dimensions_fenetre = (FENETRE_LARGEUR, FENETRE_HAUTEUR)
-images_par_seconde = 25
+images_par_seconde = 40
 
 # Fin Paramètres
 
@@ -255,21 +267,34 @@ def creerEau(position):
     
     return entite
 
+def generer_pas(y, max = SOL_POSITION_MAXIMALE, min = SOL_POSITION_MINIMALE, marge = SOL_MARGE_VERTICALE):
+    marge_hauter_haut = (max - y) // marge 
+    marge_hauter_bas = (y - min) // marge 
+    
+    if marge_hauter_haut > 2:
+        marge_hauter_haut = 2
+        
+    elif marge_hauter_bas < -2:
+        marge_hauter_bas = -2
+    
+    if marge_hauter_haut < 0:
+        marge_hauter_haut = 0
+        
+    return random.randint(-marge_hauter_bas, marge_hauter_haut)
+
 def generer_hauteur(position_y_precedente, hauteur_precedente, type_precedente, type_actuelle):
     hauteur = 0
-    
-    marge_hauter = SOL_POSITION_MAXIMALE - position_y_precedente
-    nombre_etape = marge_hauter // SOL_MARGE_VERTICALE
-    marge = SOL_MARGE_VERTICALE * random.randint(nombre_etape//5, nombre_etape//3)
     
     if type_actuelle == TYPE_EAU:
         hauteur = position_y_precedente + hauteur_precedente - EAU_HAUTEUR
     else:
         if type_actuelle == TYPE_SOL:
             if type_precedente == TYPE_EAU:
-                hauteur = position_y_precedente + hauteur_precedente - SOL_HAUTEUR + marge
+                marge = (generer_pas(position_y_precedente, EAU_POSITION_MAXIMALE, EAU_POSITION_MINIMALE) % 2) * SOL_MARGE_VERTICALE
+                hauteur = position_y_precedente + hauteur_precedente - SOL_HAUTEUR + abs(marge)
             else:
-                hauteur = SOL_POSITION_MINIMALE + marge
+                marge = generer_pas(position_y_precedente) * SOL_MARGE_VERTICALE
+                hauteur = position_y_precedente + marge
     
     return hauteur
 
@@ -297,11 +322,10 @@ def remplirScene(scene, maintenant):
     nombre_elements = nombreElementScene(scene)
     
     if nombre_elements > 0:
-        premier = premiereEntite(scene)
-        while premier and positionEntite(premier)[0] < -FENETRE_MARGE_EXTERNE:
-            listEntite(scene).remove(premier)
-            nombre_elements -= 1
-            premier = premiereEntite(scene)
+        for entite in listEntite(scene):
+            if positionEntite(entite)[0] < -FENETRE_MARGE_EXTERNE:
+                listEntite(scene).remove(entite)
+                nombre_elements -= 1
         
     derniere_position = (0,0)
     derniere_taille = (0,0)
@@ -373,21 +397,37 @@ def creerImage(path, taille):
     return pygame.transform.scale(pygame.image.load(path).convert_alpha(fenetre), taille) 
     
 
+def generer_vitesse_saut():
+    global dernier_de_touche
+    
+    temps = pygame.time.get_ticks()  - dernier_de_touche
+    
+    if temps > TEMPS_DE_TOUCHE_MAXIMALE:
+        temps = TEMPS_DE_TOUCHE_MAXIMALE
+    elif temps < TEMPS_DE_TOUCHE_MAXIMALE/2:
+        temps = TEMPS_DE_TOUCHE_MAXIMALE/2
+    
+    dernier_de_touche = None
+    return VITESSE_VERTICALE * (temps/(TEMPS_DE_TOUCHE_MAXIMALE/2))
+
 def faireSauterBalle():
     global balle, peut_sauter
     
     if peut_sauter:
         vx = vitesseEntite(balle)[0]
         ax = accelerationEntite(balle)[0]
+        
+        if vx < 0:
+            vx = VITESSE_HORIZONTALE;
 
-        modifierVitesse(balle, (vx, VITESSE_VERTICALE))
+        modifierVitesse(balle, (vx, generer_vitesse_saut()))
         modifierAcceleration(balle, (ax,-ACCELERATION_GRAVITATIONNELLE))
 
 def estPoseSur(entite1, entite2, marge):
     y1 = positionEntite(entite1)[1]
     y2 = positionEntite(entite2)[1] + tailleEntite(entite2)[1]
     
-    if ( y1 < y2 and y1 + marge >= y2 ) or y1 == y2:
+    if ( y1 - marge < y2 and y1 + marge >= y2 ) or y1 == y2:
         return True
     return False
 
@@ -410,12 +450,16 @@ def peutTomber(entite1, entite2):
             return 1
     return 0;
 
+def vaTomber(direction_chute, id_collision, nombre_de_collision):
+    return (direction_chute < 0 and id_collision == 0) or (direction_chute > 0 and id_collision+1 == nombre_de_collision)
+
 def collisionBalle():
     global balle, scene, peut_sauter
     
     entites = [item for item in listEntite(scene) if item != balle]
     collisions = collision_avec(balle, entites)
-    nbr_collision = -1
+    id_collision = 0
+    nombre_de_collision = len(collisions)
     
     est_au_sol = False
     est_sur_eau = False
@@ -426,37 +470,71 @@ def collisionBalle():
             vy = vitesseEntite(balle)[1]
             entite = entites[collision]
 
+            #Pour vérifier que la balle est posée 
+            #Sur l'entité en question
             if estPoseSur(balle, entite, BALLE_TOUCHE_MARGE):
+                
                 if typeEntite(entite) == TYPE_SOL:
                     est_au_sol = peut_sauter  = True
-                    directtion_chute = peutTomber(balle, entite)
+                    direction_chute = peutTomber(balle, entite)
                     
                     if vy < 0:
+                        #Pour contrer la gravité de la balle
+                        #lorsque la balle touche le sol
                         modifierPosition(balle, (xb, positionEntite(entite)[1]+tailleEntite(entite)[1]-BALLE_TOUCHE_MARGE))
-                        modifierVitesse(balle, (0,0))
+                        modifierVitesse(balle, (vitesseEntite(balle)[0],0))
                         modifierAcceleration(balle, (0,0))
                     else:
                         if positionEntite(balle)[0] < BALLE_POSITION:
-                            modifierVitesse(balle, (VITESSE_HORIZONTALE, vitesseEntite(balle)[1]))
+                            #Pour que la balle retrouve
+                            #sa position d'orgine
+                            modifierVitesse(balle, (0, vitesseEntite(balle)[1]))
+                            modifierAcceleration(balle, (ACCELERATION_HORIZONTALE/5, accelerationEntite(balle)[1]))
                         else:
                             modifierVitesse(balle, (0, vitesseEntite(balle)[1]))
+                    
+                    #Pour pemetre que la balle tombe
+                    #Lorsque la reception est mauvaise
+                    if vaTomber(direction_chute, id_collision, nombre_de_collision):
+                        #pour eviter de sauter violement après avoir
+                        #été coincé derrière un obstacle
+                        if direction_chute < 0:
+                            modifierPosition(balle, (positionEntite(entite)[0] - BALLE_RAYON * 2 + BALLE_TOUCHE_MARGE, positionEntite(balle)[1]))
+                        modifierVitesse(balle, (VITESSE_HORIZONTALE*direction_chute, vitesseEntite(balle)[1]))
                         
-                    if directtion_chute and ((directtion_chute < 0 and nbr_collision > 0) or nbr_collision + 1 == len(collisions)):
-                        modifierVitesse(balle, (VITESSE_HORIZONTALE*directtion_chute, vitesseEntite(balle)[1]))
                         if not est_sur_eau:
-                            modifierAcceleration(balle, (0, -ACCELERATION_GRAVITATIONNELLE))
+                            modifierAcceleration(balle, (ACCELERATION_HORIZONTALE, -ACCELERATION_GRAVITATIONNELLE))
+                            
                     elif positionEntite(balle)[0] < BALLE_POSITION:
                         modifierVitesse(balle, (VITESSE_HORIZONTALE, vitesseEntite(balle)[1]))
+                    
+                        
                 elif typeEntite(entite) == TYPE_EAU:
-                    if (vy < 0 and not peutTomber(balle, entite)) or not peutTomber(balle, entite):
-                        est_sur_eau = True
+                    direction_chute = peutTomber(balle, entite)
+                    est_sur_eau = True
+                    
+                    if (vy < 0 and not direction_chute) or not direction_chute:
+                        
                         modifierPosition(balle, (xb, positionEntite(entite)[1]+tailleEntite(entite)[1]-BALLE_TOUCHE_MARGE))
-                        modifierVitesse(balle, (0,0))
+                        modifierVitesse(balle, (VITESSE_HORIZONTALE*direction_chute,0))
                         modifierAcceleration(balle, (0,0))
                         
                         if positionEntite(entite)[0] - BALLE_TOUCHE_MARGE <= xb:
                             modifierVitesse(balle, (-VITESSE_HORIZONTALE,0))
+                    elif vaTomber(direction_chute, id_collision, nombre_de_collision):
+                        #pour eviter de sauter violement après avoir
+                        #été coincé derrière un obstacle
+                        if direction_chute < 0:
+                            modifierPosition(balle, (positionEntite(entite)[0] - BALLE_RAYON * 2 + BALLE_TOUCHE_MARGE, positionEntite(balle)[1]))
+                        modifierVitesse(balle, (VITESSE_HORIZONTALE*direction_chute, vitesseEntite(balle)[1]))
+                        
+                        if not est_sur_eau:
+                            modifierAcceleration(balle, (ACCELERATION_HORIZONTALE, -ACCELERATION_GRAVITATIONNELLE))
+                            
+                    elif positionEntite(balle)[0] < BALLE_POSITION:
+                        modifierVitesse(balle, (VITESSE_HORIZONTALE, vitesseEntite(balle)[1]))
             else:
+                
                 if typeEntite(entite) == TYPE_SOL and not est_sur_eau:
                     direction_vitesse = 0
                     if positionEntite(balle)[0] < positionEntite(entite)[0]:
@@ -467,10 +545,30 @@ def collisionBalle():
             if not est_au_sol and not est_sur_eau:
                 modifierAcceleration(balle, (0, -ACCELERATION_GRAVITATIONNELLE))
                 peut_sauter = False
-            nbr_collision += 1
+                
+            id_collision += 1
     else:
+        modifierVitesse(balle, (0, vitesseEntite(balle)[1]))
         modifierAcceleration(balle, (0, -ACCELERATION_GRAVITATIONNELLE))
         peut_sauter = False
+    
+def dessinerTableauDeBord(maintenant):
+    global dernier_de_touche, fenetre
+    
+    if dernier_de_touche:
+        x, y = repere_vers_pygame((TABLEAU_DE_BORD_X, TABLEAU_DE_BORD_Y), (TABLEAU_DE_BORD_LARGEUR, TABLEAU_DE_BORD_HAUTEUR))
+        rect = pygame.Rect(x, y, TABLEAU_DE_BORD_LARGEUR, TABLEAU_DE_BORD_HAUTEUR)
+        
+        temps = maintenant - dernier_de_touche
+        largeur = 0
+        if temps > TEMPS_DE_TOUCHE_MAXIMALE:
+            temps = TEMPS_DE_TOUCHE_MAXIMALE
+        
+        largeur = temps * 100/TEMPS_DE_TOUCHE_MAXIMALE #Pourcentage de l'argeur
+        largeur *= TABLEAU_DE_BORD_LARGEUR/100 
+            
+        pygame.draw.rect(fenetre, BLANC, rect, TABLEAU_DE_BORD_MARGE, 1)
+        pygame.draw.rect(fenetre, BLANC, pygame.Rect(x, y, largeur, TABLEAU_DE_BORD_HAUTEUR))
 
 def createBalleImage(path):   
     return creerImage(path, (BALLE_RAYON*2, BALLE_RAYON*2))
@@ -481,7 +579,7 @@ def creerBalle():
     balle = nouvelleEntite(TYPE_BALLE, IMAGE_BALLE)
     
     modifierTaille(balle, (BALLE_RAYON*2, BALLE_RAYON*2))
-    modifierPosition(balle, (BALLE_POSITION // 2, SOL_POSITION_MINIMALE + SOL_HAUTEUR - VITESSE_VERTICALE))
+    modifierPosition(balle, (BALLE_POSITION // 2, SOL_POSITION_MINIMALE + SOL_HAUTEUR + SOL_MARGE_VERTICALE * 5 - VITESSE_VERTICALE))
     modifierVitesse(balle, (0,0))
     modifierAcceleration(balle, (0,0))
     modifierDernierTemps(balle, pygame.time.get_ticks())
@@ -504,7 +602,13 @@ def creerBalle():
     ajouterPose(balle, IMAGE_BALLE_330_DEG)
     
     return reveillerEntite(balle);
-    
+
+def initialiserEcranJeu():   
+    global scene, balle
+     
+    ajouterEntite(scene, balle)
+    random.seed()
+
 def afficherEcranDeJeu(maintenant):
     global scene, balle, dernier_temps_jeux, score, enJeu, fini, temps_depart
     
@@ -525,20 +629,30 @@ def afficherEcranDeJeu(maintenant):
     remplirScene(scene, maintenant)
     afficherScene(scene, IMAGE_SCENE)
     afficheEntite(scene)
-    
+    dessinerTableauDeBord(maintenant)
+
+def traiterEntreeEcranDeJeu(evenement):
+    global enJeu, dernier_temps_jeux, dernier_de_touche
+    if evenement.type == pygame.KEYDOWN:
+        if not enJeu:
+            enJeu = True  
+            dernier_temps_jeux = pygame.time.get_ticks()
+        else:
+            if evenement.key == pygame.K_SPACE:
+                dernier_de_touche = pygame.time.get_ticks()
+    elif evenement.type == pygame.KEYUP:
+        if enJeu:
+            if evenement.key == pygame.K_SPACE:
+               if dernier_de_touche:
+                   faireSauterBalle()
+                   
 def traite_entrees():
-    global fini, enJeu, dernier_temps_jeux
+    global fini
     
     for evenement in pygame.event.get():
         if evenement.type == pygame.QUIT:
             fini = True
-        elif evenement.type == pygame.KEYDOWN:
-            if not enJeu:
-                enJeu = True  
-                dernier_temps_jeux = pygame.time.get_ticks()
-            else:
-                if evenement.key == pygame.K_SPACE:
-                    faireSauterBalle()
+        traiterEntreeEcranDeJeu(evenement)
 
 # Initialisation
 pygame.init()
@@ -576,16 +690,16 @@ horloge = pygame.time.Clock()
 temps_depart = pygame.time.get_ticks()
 dernier_temps_jeux = pygame.time.get_ticks()
 dernier_temps_eau = None
+dernier_de_touche = None
 
-ajouterEntite(scene, balle)
-random.seed()
+initialiserEcranJeu()
 
 while not fini:
     traite_entrees()
     
-    fenetre.fill(NOIR)
-    
     maintenant = pygame.time.get_ticks()
+    
+    fenetre.fill(NOIR)
     
     afficherEcranDeJeu(maintenant)
     
