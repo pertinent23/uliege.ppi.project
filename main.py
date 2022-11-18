@@ -357,14 +357,15 @@ def generer_entite(dernier_entite, position_precedente, taille_precedente, maint
     
     return resultat
 
+def nettoyerScene(scene):
+    for entite in listEntite(scene):
+        x, y = positionEntite(entite)
+        if x < -FENETRE_MARGE_EXTERNE or y > FENETRE_HAUTEUR + FENETRE_MARGE_EXTERNE:
+            listEntite(scene).remove(entite)
+
 def remplirScene(scene, maintenant):
+    nettoyerScene(scene)
     nombre_elements = nombreElementScene(scene)
-    
-    if nombre_elements > 0:
-        for entite in listEntite(scene):
-            if positionEntite(entite)[0] < -FENETRE_MARGE_EXTERNE:
-                listEntite(scene).remove(entite)
-                nombre_elements -= 1
         
     derniere_position = (0,0)
     derniere_taille = (0,0)
@@ -523,7 +524,7 @@ def collisionBalle():
                         #Pour contrer la gravité de la balle
                         #lorsque la balle touche le sol
                         modifierPosition(balle, (xb, positionEntite(entite)[1]+tailleEntite(entite)[1]-BALLE_TOUCHE_MARGE))
-                        modifierVitesse(balle, (vitesseEntite(balle)[0],0))
+                        modifierVitesse(balle, (vitesseEntite(balle)[0], 0))
                         modifierAcceleration(balle, (0,0))
                     else:
                         if positionEntite(balle)[0] < BALLE_POSITION:
@@ -602,18 +603,18 @@ def collisionBalle():
         peut_sauter = False
     
 def dessinerTableauDeBord(maintenant):
-    global dernier_de_touche, fenetre, police, score, score_piece
+    global dernier_de_touche, fenetre, police_tableau_de_bord, score, score_piece
     
+    #Affichage du score du au parcour
     fenetre.blit(IMAGE_BALLE_TABLEAU_DE_BORD, repere_vers_pygame((30, FENETRE_HAUTEUR * 0.9), (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR)))
-    
     texte = " {0:.1f}".format(score)
-    image = police.render(texte, True, JAUNE)
+    image = police_tableau_de_bord.render(texte, True, JAUNE)
     fenetre.blit(image, repere_vers_pygame((30 + IMAGE_TABLEAU_DE_BORD_LARGEUR + 10, FENETRE_HAUTEUR*0.9 + TABLEAU_DE_BORD_TAILLE_POLICE/5), (TABLEAU_DE_BORD_TAILLE_POLICE, TABLEAU_DE_BORD_TAILLE_POLICE)))
     
+    #Affichage du score du aux pieces
     fenetre.blit(IMAGE_PIECE_TABLEAU_DE_BORD, repere_vers_pygame((30, FENETRE_HAUTEUR * 0.9 - 40), (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR)))
-    
     texte = " {0}".format(score_piece)
-    image = police.render(texte, True, JAUNE)
+    image = police_tableau_de_bord.render(texte, True, JAUNE)
     fenetre.blit(image, repere_vers_pygame((30 + IMAGE_TABLEAU_DE_BORD_LARGEUR + 10, FENETRE_HAUTEUR*0.9 + TABLEAU_DE_BORD_TAILLE_POLICE/5 - 40), (TABLEAU_DE_BORD_TAILLE_POLICE, TABLEAU_DE_BORD_TAILLE_POLICE)))
     
     if dernier_de_touche:
@@ -719,7 +720,7 @@ def traite_entrees():
 pygame.init()
 
 dimensions_fenetre = (FENETRE_LARGEUR, FENETRE_HAUTEUR)
-police = pygame.font.SysFont("ubuntu", TABLEAU_DE_BORD_TAILLE_POLICE, True)
+police_tableau_de_bord = pygame.font.SysFont("ubuntu", TABLEAU_DE_BORD_TAILLE_POLICE, True)
 fenetre = pygame.display.set_mode(dimensions_fenetre)
 pygame.display.set_caption("Bounce Tales")
 
