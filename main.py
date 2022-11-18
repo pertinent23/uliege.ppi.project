@@ -7,6 +7,7 @@ import math
 TYPE_SOL = "sol"
 TYPE_BALLE = "balle"
 TYPE_EAU = "eau"
+TYPE_PIECE = "piece"
 
 NOIR = (0, 0, 0)
 BLANC = (255, 255, 255)
@@ -22,6 +23,11 @@ BALLE_RAYON = 30
 BALLE_POSITION = FENETRE_LARGEUR // 3
 BALLE_TOUCHE_MARGE = 2
 
+PIECE_LARGEUR = 60
+PIECE_HAUTEUR = 60
+PIECE_MARGE = 10
+PIECE_DELAI = 300 # en px
+
 SOL_HAUTEUR = 370
 SOL_LARGEUR = 120
 SOL_MARGE_HORIZONTALE = 8
@@ -34,7 +40,7 @@ EAU_HAUTEUR = 368
 EAU_LARGEUR = 120
 EAU_POSITION_MINIMALE = - EAU_HAUTEUR + SOL_MARGE_VERTICALE * 2
 EAU_POSITION_MAXIMALE = 0
-EAU_INTERVAL = 15000
+EAU_INTERVAL = 15000 #en ms
 
 VITESSE_HORIZONTALE = 0.2 # px/s
 VITESSE_VERTICALE = 0.6 # px/s
@@ -44,20 +50,19 @@ ACCELERATION_HORIZONTALE = 0.0008
 
 TEMPS_DE_TOUCHE_MAXIMALE = 150
 
+IMAGES_PAR_SECONDE = 40
+
 TABLEAU_DE_BORD_LARGEUR = 100
 TABLEAU_DE_BORD_HAUTEUR = 25
 TABLEAU_DE_BORD_MARGE = 3
 TABLEAU_DE_BORD_X = 100
 TABLEAU_DE_BORD_Y = 13
+TABLEAU_DE_BORD_TAILLE_POLICE = 20
+
+IMAGE_TABLEAU_DE_BORD_LARGEUR = 30
+IMAGE_TABLEAU_DE_BORD_HAUTEUR = 30
 
 # Fin Constantes
-
-# Paramètres
-
-dimensions_fenetre = (FENETRE_LARGEUR, FENETRE_HAUTEUR)
-images_par_seconde = 40
-
-# Fin Paramètres
 
 # Fonctions 
 def rectangle(entite):
@@ -267,6 +272,30 @@ def creerEau(position):
     
     return entite
 
+def creerPiecePour(entite):
+    
+    x, y = positionEntite(entite)
+    largeur, hauteur = tailleEntite(entite)
+    marge = 0
+    
+    if typeEntite(entite) == TYPE_EAU:
+        marge = random.randint(3, 5)
+    else:
+        marge = random.randint(1, 3)
+    
+    entite = nouvelleEntite(TYPE_PIECE, IMAGE_PIECE)
+    
+    x += (largeur - PIECE_LARGEUR)/2
+    y += hauteur + PIECE_MARGE * marge
+    
+    modifierPosition(entite, (x, y))
+    modifierTaille(entite, (PIECE_LARGEUR, PIECE_HAUTEUR))
+    modifierAcceleration(entite, (0,0))
+    modifierVitesse(entite, (-VITESSE_HORIZONTALE, 0))
+    modifierDernierTemps(entite, pygame.time.get_ticks())
+    
+    return entite
+
 def generer_pas(y, max = SOL_POSITION_MAXIMALE, min = SOL_POSITION_MINIMALE, marge = SOL_MARGE_VERTICALE):
     marge_hauter_haut = (max - y) // marge 
     marge_hauter_bas = (y - min) // marge 
@@ -298,25 +327,35 @@ def generer_hauteur(position_y_precedente, hauteur_precedente, type_precedente, 
     
     return hauteur
 
-def generer_entite(scene, position_precedente, taille_precedente, maintenant):
+def generer_entite(dernier_entite, position_precedente, taille_precedente, maintenant):
     global IMAGE_SOL, score, dernier_temps_eau
     
     x = position_precedente[0] + taille_precedente[0] - SOL_MARGE_HORIZONTALE
     hauteur = 0
+    resultat = list()
     
     if score > BALLE_POSITION / 2:
         if score > BALLE_POSITION:
             
             if not dernier_temps_eau or maintenant - dernier_temps_eau > EAU_INTERVAL:
                 dernier_temps_eau = maintenant
-                hauteur = generer_hauteur(position_precedente[1], taille_precedente[1], typeEntite(derniereEntite(scene)), TYPE_EAU)
+                hauteur = generer_hauteur(position_precedente[1], taille_precedente[1], typeEntite(dernier_entite), TYPE_EAU)
                 
-                return creerEau((x, hauteur))
+                resultat.append(creerEau((x, hauteur)))
+            else:
+                hauteur = generer_hauteur(position_precedente[1], taille_precedente[1], typeEntite(dernier_entite), TYPE_SOL)
+                resultat.append(creerSol((x, hauteur)))
             
-        hauteur = generer_hauteur(position_precedente[1], taille_precedente[1], typeEntite(derniereEntite(scene)), TYPE_SOL)
-        return creerSol((x, hauteur))
+        else:
+            hauteur = generer_hauteur(position_precedente[1], taille_precedente[1], typeEntite(dernier_entite), TYPE_SOL)
+            resultat.append(creerSol((x, hauteur)))
+    else:
+        resultat.append(creerSol((x, SOL_POSITION_MINIMALE)))
+        
+    if score > PIECE_DELAI and random.randint(0, 10) > 5:
+        resultat.append(creerPiecePour(resultat[len(resultat)-1]))
     
-    return creerSol((x, SOL_POSITION_MINIMALE))
+    return resultat
 
 def remplirScene(scene, maintenant):
     nombre_elements = nombreElementScene(scene)
@@ -339,12 +378,14 @@ def remplirScene(scene, maintenant):
             derniere_taille = tailleEntite(dernier)
     
     while derniere_position[0] + derniere_taille[0] < FENETRE_LARGEUR + FENETRE_MARGE_EXTERNE:
-        entite = reveillerEntite(generer_entite(scene, derniere_position, derniere_taille, maintenant))
-        ajouterEntite(scene, entite)
+        for entite in generer_entite(dernier, derniere_position, derniere_taille, maintenant):
+            entite = reveillerEntite(entite)
+            ajouterEntite(scene, entite)
         
-        dernier = derniereEntite(scene, require)
-        derniere_position = positionEntite(dernier)
-        derniere_taille = tailleEntite(dernier)
+            if require.count(typeEntite(entite)) != 0:
+                dernier = entite
+                derniere_position = positionEntite(dernier)
+                derniere_taille = tailleEntite(dernier)
  
 def mru_vitesse(vitesse, acceleration, dt):
     vx0, vy0 = vitesse
@@ -454,7 +495,7 @@ def vaTomber(direction_chute, id_collision, nombre_de_collision):
     return (direction_chute < 0 and id_collision == 0) or (direction_chute > 0 and id_collision+1 == nombre_de_collision)
 
 def collisionBalle():
-    global balle, scene, peut_sauter
+    global balle, scene, peut_sauter, score_piece
     
     entites = [item for item in listEntite(scene) if item != balle]
     collisions = collision_avec(balle, entites)
@@ -533,6 +574,10 @@ def collisionBalle():
                             
                     elif positionEntite(balle)[0] < BALLE_POSITION:
                         modifierVitesse(balle, (VITESSE_HORIZONTALE, vitesseEntite(balle)[1]))
+                        
+                elif typeEntite(entite) == TYPE_PIECE:
+                    score_piece += 1
+                    modifierVitesse(entite, (-VITESSE_HORIZONTALE, VITESSE_HORIZONTALE))
             else:
                 
                 if typeEntite(entite) == TYPE_SOL and not est_sur_eau:
@@ -541,6 +586,10 @@ def collisionBalle():
                         direction_vitesse = -1
 
                     modifierVitesse(balle, (VITESSE_HORIZONTALE*direction_vitesse, vitesseEntite(balle)[1]))
+                
+                elif typeEntite(entite) == TYPE_PIECE:
+                    score_piece += 1
+                    modifierVitesse(entite, (-VITESSE_HORIZONTALE, VITESSE_HORIZONTALE))
                 
             if not est_au_sol and not est_sur_eau:
                 modifierAcceleration(balle, (0, -ACCELERATION_GRAVITATIONNELLE))
@@ -553,7 +602,19 @@ def collisionBalle():
         peut_sauter = False
     
 def dessinerTableauDeBord(maintenant):
-    global dernier_de_touche, fenetre
+    global dernier_de_touche, fenetre, police, score, score_piece
+    
+    fenetre.blit(IMAGE_BALLE_TABLEAU_DE_BORD, repere_vers_pygame((30, FENETRE_HAUTEUR * 0.9), (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR)))
+    
+    texte = " {0:.1f}".format(score)
+    image = police.render(texte, True, JAUNE)
+    fenetre.blit(image, repere_vers_pygame((30 + IMAGE_TABLEAU_DE_BORD_LARGEUR + 10, FENETRE_HAUTEUR*0.9 + TABLEAU_DE_BORD_TAILLE_POLICE/5), (TABLEAU_DE_BORD_TAILLE_POLICE, TABLEAU_DE_BORD_TAILLE_POLICE)))
+    
+    fenetre.blit(IMAGE_PIECE_TABLEAU_DE_BORD, repere_vers_pygame((30, FENETRE_HAUTEUR * 0.9 - 40), (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR)))
+    
+    texte = " {0}".format(score_piece)
+    image = police.render(texte, True, JAUNE)
+    fenetre.blit(image, repere_vers_pygame((30 + IMAGE_TABLEAU_DE_BORD_LARGEUR + 10, FENETRE_HAUTEUR*0.9 + TABLEAU_DE_BORD_TAILLE_POLICE/5 - 40), (TABLEAU_DE_BORD_TAILLE_POLICE, TABLEAU_DE_BORD_TAILLE_POLICE)))
     
     if dernier_de_touche:
         x, y = repere_vers_pygame((TABLEAU_DE_BORD_X, TABLEAU_DE_BORD_Y), (TABLEAU_DE_BORD_LARGEUR, TABLEAU_DE_BORD_HAUTEUR))
@@ -657,12 +718,20 @@ def traite_entrees():
 # Initialisation
 pygame.init()
 
+dimensions_fenetre = (FENETRE_LARGEUR, FENETRE_HAUTEUR)
+police = pygame.font.SysFont("ubuntu", TABLEAU_DE_BORD_TAILLE_POLICE, True)
 fenetre = pygame.display.set_mode(dimensions_fenetre)
 pygame.display.set_caption("Bounce Tales")
 
 IMAGE_SOL = creerImage("images/ground.png", (SOL_LARGEUR, SOL_HAUTEUR))
 IMAGE_EAU = creerImage("images/water.png", (EAU_LARGEUR, EAU_HAUTEUR))
+
 IMAGE_SCENE = creerImage("images/trees-7191822_1280.png", (FENETRE_LARGEUR, FENETRE_HAUTEUR))
+IMAGE_PIECE = creerImage("images/piece.png", (PIECE_LARGEUR, PIECE_HAUTEUR))
+
+IMAGE_PIECE_TABLEAU_DE_BORD = creerImage("images/piece.png", (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR))
+IMAGE_BALLE_TABLEAU_DE_BORD = creerImage("images/ball/ball.0.png", (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR))
+
 IMAGE_BALLE = createBalleImage("images/ball/ball.0.png")
 IMAGE_BALLE_30_DEG = createBalleImage("images/ball/ball.30.png")
 IMAGE_BALLE_45_DEG = createBalleImage("images/ball/ball.45.png")
@@ -686,6 +755,7 @@ scene = nouvelleScene()
 balle = creerBalle()
 peut_sauter = False
 score = 0 #equivalent à la distance parcouru
+score_piece = 0
 horloge = pygame.time.Clock()
 temps_depart = pygame.time.get_ticks()
 dernier_temps_jeux = pygame.time.get_ticks()
@@ -698,15 +768,13 @@ while not fini:
     traite_entrees()
     
     maintenant = pygame.time.get_ticks()
-    
     fenetre.fill(NOIR)
     
     afficherEcranDeJeu(maintenant)
     
-    temps_depart = maintenant
-    
     pygame.display.flip()
-    horloge.tick(images_par_seconde)
+    horloge.tick(IMAGES_PAR_SECONDE)
+    temps_depart = maintenant
 
 pygame.display.quit()
 pygame.quit()
