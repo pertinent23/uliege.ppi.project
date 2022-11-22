@@ -1,7 +1,10 @@
 import pygame
 import random
+import math
 
 # Constantes
+
+TITRE = "BOUNCE TALES"
 
 TYPE_SOL = "sol"
 TYPE_BALLE = "balle"
@@ -76,6 +79,15 @@ TABLEAU_DE_BORD_TAILLE_POLICE = 20
 
 IMAGE_TABLEAU_DE_BORD_LARGEUR = 30 #en px
 IMAGE_TABLEAU_DE_BORD_HAUTEUR = 30 #en px
+
+ECRAN_DE_JEUX_POLICE_TAILLE = 80
+
+ECRAN_SELECTION_NIVEAU_POLICE_TAILLE = 30
+
+WALL_DIMENSIONS = 90
+NIVEAU_WALL_DIMENSIONS = 50
+WALL_MARGE = 15
+
 
 # Utilisé pour la gestion des écrans
 
@@ -202,9 +214,9 @@ def progresserAnimation(entite):
         
         if vx > 0:
             if vx > VITESSE_HORIZONTALE:
-                actuelle += 2;
+                actuelle += 2
             else:
-                actuelle += 1;
+                actuelle += 1
             
         if actuelle >= nbr_poses:
             actuelle = 0
@@ -379,13 +391,13 @@ def ajouter_piece(resultat):
     return resultat
 
 def generer_entite(dernier_entite, position_precedente, taille_precedente, maintenant):
-    global IMAGE_SOL, score, dernier_temps_eau, dernier_temps_ocean, dernier_temps_jungle
+    global IMAGE_SOL, score, dernier_temps_eau, dernier_temps_ocean, dernier_temps_jungle, ecran_actuel
     
     x = position_precedente[0] + taille_precedente[0] - SOL_MARGE_HORIZONTALE
     hauteur = 0
     resultat = list()
     
-    if score > BALLE_POSITION:
+    if score > BALLE_POSITION and ecran_actuel == ECRAN_DE_JEUX:
         if dernier_temps_jungle and typeEntite(dernier_entite) == TYPE_SOL and maintenant - dernier_temps_jungle > JUNGLE_INTERVAL and random.randint(0, 10) > 7: 
             dernier_temps_jungle = maintenant
             longeur = random.randint(JUNGLE_LONGUEUR_MINIMALE, JUNGLE_LONGUEUR_MAXIMALE)
@@ -582,7 +594,7 @@ def faireSauterBalle(maintenant):
         ax = accelerationEntite(balle)[0]
         
         if vx < 0:
-            vx = VITESSE_HORIZONTALE;
+            vx = VITESSE_HORIZONTALE
 
         modifierVitesse(balle, (vx, generer_vitesse_saut()))
         modifierAcceleration(balle, (ax,-ACCELERATION_GRAVITATIONNELLE))
@@ -615,7 +627,7 @@ def peutTomber(entite1, entite2):
     elif x2 + w2 < x1 + w1:
         if x1 + w1 - x2 - w2 > w1 / 2:
             return 1
-    return 0;
+    return 0
 
 def vaTomber(direction_chute, id_collision, nombre_de_collision):
     return (direction_chute < 0 and id_collision == 0) or (direction_chute > 0 and id_collision+1 == nombre_de_collision)
@@ -771,6 +783,63 @@ def dessinerTableauDeBord(maintenant):
         pygame.draw.rect(fenetre, BLANC, rect, TABLEAU_DE_BORD_MARGE, 1)
         pygame.draw.rect(fenetre, BLANC, pygame.Rect(x, y, largeur, TABLEAU_DE_BORD_HAUTEUR))
 
+def dessinerEcranAccueilMessage():
+    global fenetre, police_tableau_de_bord, police_ecran_de_jeu
+    
+    #Affichage du titre du Jaune
+    image = police_ecran_de_jeu.render(TITRE, True, JAUNE)
+    taille = image.get_rect()
+    x = (FENETRE_LARGEUR - taille.width)/2
+    y = FENETRE_HAUTEUR/2
+    i = x - WALL_MARGE * 2
+    while i < x + taille.width:
+        fenetre.blit(IMAGE_WALL, (i, y - WALL_DIMENSIONS))
+        i += WALL_DIMENSIONS
+    fenetre.blit(image, repere_vers_pygame((x, y), (taille.width, taille.height)))
+
+    
+    image = police_tableau_de_bord.render("appuyez sur [espace]", True, JAUNE)
+    taille = image.get_rect()
+    x = (FENETRE_LARGEUR - taille.width)/2
+    y -= WALL_MARGE + taille.height
+    fenetre.blit(image, repere_vers_pygame((x, y), (taille.width, taille.height)))
+
+
+def dessinerEcranNiveauMessage():
+    global fenetre, police_ecran_de_niveau, police_ecran_de_jeu, niveau_actuel
+    
+    increment = FENETRE_HAUTEUR/6
+    y = increment * 4
+    niveaux = [("FACILE", NIVEAU_FACILE), ("NORMAL", NIVEAU_NORMAL), ("DIFFICILE", NIVEAU_DIFFICILE)]
+    
+    for niveau in niveaux:
+        image = police_ecran_de_niveau.render(niveau[0], True, JAUNE if niveau_actuel == niveau[1] else BLANC)
+        taille = image.get_rect()
+        
+        i = (FENETRE_LARGEUR/7)*2.5
+        
+        if niveau_actuel == niveau[1]:
+            marge = WALL_MARGE/2
+            largeur = math.ceil((FENETRE_LARGEUR/7)*1.5/NIVEAU_WALL_DIMENSIONS) * NIVEAU_WALL_DIMENSIONS + marge*2
+            hauteur = NIVEAU_WALL_DIMENSIONS + marge*2
+            x0, y0 = repere_vers_pygame((i-marge, y-marge), (largeur, hauteur))
+            rect = pygame.Rect(x0, y0, largeur, hauteur)
+            pygame.draw.rect(fenetre, JAUNE, rect, 0, 4)
+        
+        while i < (FENETRE_LARGEUR/6) * 3.5:
+            fenetre.blit(IMAGE_NIVEAU_WALL, repere_vers_pygame((i, y), (NIVEAU_WALL_DIMENSIONS, NIVEAU_WALL_DIMENSIONS)))
+            i += NIVEAU_WALL_DIMENSIONS
+            
+        x = (i - (FENETRE_LARGEUR/7)*2.5 - taille.width)/2 + (FENETRE_LARGEUR/7)*2.5
+        fenetre.blit(image, repere_vers_pygame((x, y + (NIVEAU_WALL_DIMENSIONS - taille.height)/2), (taille.width, taille.height)))
+        y -= increment
+    
+    image = police_tableau_de_bord.render("appuyez sur [monter] et [descendre] ou [espace] pour valider", True, JAUNE)
+    taille = image.get_rect()
+    x = (FENETRE_LARGEUR - taille.width)/2
+    y = WALL_MARGE
+    fenetre.blit(image, repere_vers_pygame((x, y), (taille.width, taille.height)))
+
 def creerBalleImage(path):   
     return creerImage(path, (BALLE_RAYON*2, BALLE_RAYON*2))
 
@@ -804,6 +873,25 @@ def creerBalle():
     
     return reveillerEntite(balle)
 
+def afficherTerrainClassique(maintenant):
+    global scene, balle, score, temps_depart, dernier_temps_jeux, dernier_de_touche
+    
+    change_pose = True
+    for t in range(temps_depart, maintenant+1):
+        miseAJourEntite(scene, t, change_pose)
+        change_pose = False
+    dernier_temps_jeux = maintenant
+    
+    if random.randint(0, 100) > 99:
+        dernier_de_touche = pygame.time.get_ticks()
+    
+    if dernier_de_touche and random.randint(0, 10) > 9:
+        faireSauterBalle(maintenant)
+    
+    remplirScene(scene, maintenant)
+    afficherScene(scene)
+    afficheEntite(scene)
+
 def initialiserEcranJeu():   
     global scene, balle, temps_depart
     
@@ -812,7 +900,6 @@ def initialiserEcranJeu():
     temps_depart = pygame.time.get_ticks()
     
     ajouterEntite(scene, balle)
-    random.seed() 
 
 def afficherEcranDeJeu(maintenant):
     global scene, balle, dernier_temps_jeux, score, enJeu, fini, temps_depart, dernier_temps_saut, peut_sauter
@@ -853,7 +940,61 @@ def traiterEntreeEcranDeJeu(evenement, maintenant):
             if evenement.key == pygame.K_SPACE:
                if dernier_de_touche:
                    faireSauterBalle(maintenant)
-                   
+
+def initialiserEcranAccueil():   
+    global scene, balle, temps_depart
+    
+    scene = nouvelleScene()
+    balle = creerBalle()
+    temps_depart = pygame.time.get_ticks()
+    
+    random.seed() 
+    
+    modifierPosition(balle, (positionEntite(balle)[0], SOL_POSITION_MINIMALE + SOL_HAUTEUR))
+    ajouterEntite(scene, balle)
+    commencerAnimation(balle)
+
+def afficherEcranAccueil(maintenant):
+    afficherTerrainClassique(maintenant)
+    dessinerEcranAccueilMessage()
+
+def traiterEntreeEcranAccueil(evenement):
+    global ecran_actuel
+    if evenement.type == pygame.KEYDOWN:
+        if evenement.key == pygame.K_SPACE:
+            ecran_actuel = ECRAN_SELECTION_NIVEAU
+
+def afficherEcranNiveau(maintenant):
+    afficherTerrainClassique(maintenant)
+    dessinerEcranNiveauMessage()
+
+def traiterEntreeEcranNiveau(evenement):
+    global ecran_actuel, niveau_actuel
+    if evenement.type == pygame.KEYDOWN:
+        
+        if evenement.key == pygame.K_SPACE:
+            ecran_actuel = ECRAN_DE_JEUX
+            initialiserEcranJeu()
+            
+        elif evenement.key == pygame.K_ESCAPE:
+            ecran_actuel = ECRAN_ACCUEIL
+            
+        elif evenement.key == pygame.K_UP:
+            if niveau_actuel == NIVEAU_DIFFICILE:
+                niveau_actuel = NIVEAU_NORMAL
+            elif niveau_actuel == NIVEAU_NORMAL:
+                niveau_actuel = NIVEAU_FACILE
+            else:
+                niveau_actuel = NIVEAU_DIFFICILE
+                
+        elif evenement.key == pygame.K_DOWN:
+            if niveau_actuel == NIVEAU_FACILE:
+                niveau_actuel = NIVEAU_NORMAL
+            elif niveau_actuel == NIVEAU_NORMAL:
+                niveau_actuel = NIVEAU_DIFFICILE
+            else:
+                niveau_actuel = NIVEAU_FACILE
+
 def traite_entrees(maintenant = 0):
     global fini
     
@@ -864,20 +1005,23 @@ def traite_entrees(maintenant = 0):
         if ecran_actuel == ECRAN_DE_JEUX:
             traiterEntreeEcranDeJeu(evenement, maintenant)
         elif ecran_actuel == ECRAN_ACCUEIL:
-            pass
+            traiterEntreeEcranAccueil(evenement)
         elif ecran_actuel == ECRAN_SELECTION_NIVEAU:
-            pass
+            traiterEntreeEcranNiveau(evenement)
 
 # Initialisation
 pygame.init()
 
 dimensions_fenetre = (FENETRE_LARGEUR, FENETRE_HAUTEUR)
-police_tableau_de_bord = pygame.font.SysFont("ubuntu", TABLEAU_DE_BORD_TAILLE_POLICE, True)
 fenetre = pygame.display.set_mode(dimensions_fenetre)
+
 pygame.display.set_caption("Bounce Tales")
 
 IMAGE_SOL = creerImage("images/ground.png", (SOL_LARGEUR, SOL_HAUTEUR))
 IMAGE_EAU = creerImage("images/water.png", (EAU_LARGEUR, EAU_HAUTEUR))
+
+IMAGE_WALL = creerImage("images/wall.png", (WALL_DIMENSIONS, WALL_DIMENSIONS))
+IMAGE_NIVEAU_WALL = creerImage("images/wall.png", (NIVEAU_WALL_DIMENSIONS, NIVEAU_WALL_DIMENSIONS))
 
 IMAGE_BRICK = creerImage("images/brick.png", (BRICK_LARGEUR, BRICK_HAUTEUR))
 IMAGE_BROKENABLE_BRICK = creerImage("images/brokenable.wall.png", (BRICK_LARGEUR, BRICK_HAUTEUR))
@@ -907,11 +1051,18 @@ IMAGE_BALLE_315_DEG = creerBalleImage("images/ball/ball.315.png")
 IMAGE_BALLE_330_DEG = creerBalleImage("images/ball/ball.330.png")
 
 fini = False
+enPause = False
 enJeu = False
 scene = None #Va contenir la scene de chaque écran
 balle = None #Va contenir la balle de chaque ecran
 peut_sauter = False
-ecran_actuel = ECRAN_DE_JEUX
+
+ecran_actuel = ECRAN_ACCUEIL
+niveau_actuel = NIVEAU_FACILE
+
+police_tableau_de_bord = pygame.font.SysFont("ubuntu", TABLEAU_DE_BORD_TAILLE_POLICE, True)
+police_ecran_de_jeu = pygame.font.SysFont("ubuntu", ECRAN_DE_JEUX_POLICE_TAILLE, True)
+police_ecran_de_niveau = pygame.font.SysFont("ubuntu", ECRAN_SELECTION_NIVEAU_POLICE_TAILLE, True)
 
 score = 0 #equivalent à la distance parcouru
 score_piece = 0
@@ -927,7 +1078,8 @@ dernier_temps_jungle = None
 
 camera_deplacement_verticale = 0
 
-initialiserEcranJeu()
+#initialiserEcranJeu()
+initialiserEcranAccueil()
 
 while not fini:
     maintenant = pygame.time.get_ticks()
@@ -938,9 +1090,9 @@ while not fini:
     if ecran_actuel == ECRAN_DE_JEUX:
         afficherEcranDeJeu(maintenant)
     elif ecran_actuel == ECRAN_ACCUEIL:
-        pass
+        afficherEcranAccueil(maintenant)
     elif ecran_actuel == ECRAN_SELECTION_NIVEAU:
-        pass
+        afficherEcranNiveau(maintenant)
     
     pygame.display.flip()
     horloge.tick(IMAGES_PAR_SECONDE)
