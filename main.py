@@ -551,7 +551,14 @@ def miseAJourEntite(scene, maintenant, change_pose):
                 progresserAnimation(entite)
             modifierDernierTemps(entite, maintenant) 
                 
-    collisionBalle()   
+    collisionBalle()  
+    
+def miseAJourDernierTemps(scene, maintenant):
+    nbr = nombreElementScene(scene)
+    
+    if nbr > 0:
+        for entite in listEntite(scene):
+            modifierDernierTemps(entite, maintenant)
             
 
 def afficheEntite(scene):
@@ -834,7 +841,7 @@ def dessinerEcranNiveauMessage():
         fenetre.blit(image, repere_vers_pygame((x, y + (NIVEAU_WALL_DIMENSIONS - taille.height)/2), (taille.width, taille.height)))
         y -= increment
     
-    image = police_tableau_de_bord.render("appuyez sur [monter] et [descendre] ou [espace] pour valider", True, JAUNE)
+    image = police_tableau_de_bord.render("appuyez sur [monter] et [descendre] ou [espace] pour continuer", True, JAUNE)
     taille = image.get_rect()
     x = (FENETRE_LARGEUR - taille.width)/2
     y = WALL_MARGE
@@ -902,9 +909,9 @@ def initialiserEcranJeu():
     ajouterEntite(scene, balle)
 
 def afficherEcranDeJeu(maintenant):
-    global scene, balle, dernier_temps_jeux, score, enJeu, fini, temps_depart, dernier_temps_saut, peut_sauter
+    global scene, balle, dernier_temps_jeux, score, enJeu, enPause, fini, temps_depart, dernier_temps_saut, peut_sauter
     
-    if enJeu:
+    if enJeu and not enPause:
         commencerAnimation(balle)
         change_pose = True
         
@@ -917,17 +924,21 @@ def afficherEcranDeJeu(maintenant):
         
         score += (maintenant - dernier_temps_jeux) * VITESSE_HORIZONTALE
         dernier_temps_jeux = maintenant
+    else:
+        miseAJourDernierTemps(scene, maintenant)
     
     if not estEntite(scene, balle):
         fini = True
     
-    remplirScene(scene, maintenant)
+    if not enPause:
+        remplirScene(scene, maintenant)
+        
     afficherScene(scene)
     afficheEntite(scene)
     dessinerTableauDeBord(maintenant)
 
 def traiterEntreeEcranDeJeu(evenement, maintenant):
-    global enJeu, dernier_temps_jeux, dernier_de_touche
+    global enJeu, dernier_temps_jeux, dernier_de_touche, enPause
     if evenement.type == pygame.KEYDOWN:
         if not enJeu:
             enJeu = True  
@@ -935,6 +946,8 @@ def traiterEntreeEcranDeJeu(evenement, maintenant):
         else:
             if evenement.key == pygame.K_SPACE:
                 dernier_de_touche = pygame.time.get_ticks()
+            elif evenement.key == pygame.K_ESCAPE:
+                enPause = not enPause
     elif evenement.type == pygame.KEYUP:
         if enJeu:
             if evenement.key == pygame.K_SPACE:
