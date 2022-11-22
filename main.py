@@ -463,6 +463,7 @@ def faireSauterBalle():
 
         modifierVitesse(balle, (vx, generer_vitesse_saut()))
         modifierAcceleration(balle, (ax,-ACCELERATION_GRAVITATIONNELLE))
+        playSound(SON_SAUT)
 
 def estPoseSur(entite1, entite2, marge):
     y1 = positionEntite(entite1)[1]
@@ -489,7 +490,7 @@ def peutTomber(entite1, entite2):
     elif x2 + w2 < x1 + w1:
         if x1 + w1 - x2 - w2 > w1 / 2:
             return 1
-    return 0;
+    return 0
 
 def vaTomber(direction_chute, id_collision, nombre_de_collision):
     return (direction_chute < 0 and id_collision == 0) or (direction_chute > 0 and id_collision+1 == nombre_de_collision)
@@ -525,6 +526,7 @@ def collisionBalle():
                         modifierPosition(balle, (xb, positionEntite(entite)[1]+tailleEntite(entite)[1]-BALLE_TOUCHE_MARGE))
                         modifierVitesse(balle, (vitesseEntite(balle)[0],0))
                         modifierAcceleration(balle, (0,0))
+                        playSound(SON_COLLISION_SOL)
                     else:
                         if positionEntite(balle)[0] < BALLE_POSITION:
                             #Pour que la balle retrouve
@@ -559,6 +561,7 @@ def collisionBalle():
                         modifierPosition(balle, (xb, positionEntite(entite)[1]+tailleEntite(entite)[1]-BALLE_TOUCHE_MARGE))
                         modifierVitesse(balle, (VITESSE_HORIZONTALE*direction_chute,0))
                         modifierAcceleration(balle, (0,0))
+                        playSound(SON_COLLISION_EAU)
                         
                         if positionEntite(entite)[0] - BALLE_TOUCHE_MARGE <= xb:
                             modifierVitesse(balle, (-VITESSE_HORIZONTALE,0))
@@ -578,6 +581,7 @@ def collisionBalle():
                 elif typeEntite(entite) == TYPE_PIECE:
                     score_piece += 1
                     modifierVitesse(entite, (-VITESSE_HORIZONTALE, VITESSE_HORIZONTALE))
+                    playSound(SON_PIECE)
             else:
                 
                 if typeEntite(entite) == TYPE_SOL and not est_sur_eau:
@@ -590,6 +594,7 @@ def collisionBalle():
                 elif typeEntite(entite) == TYPE_PIECE:
                     score_piece += 1
                     modifierVitesse(entite, (-VITESSE_HORIZONTALE, VITESSE_HORIZONTALE))
+                    playSound(SON_PIECE)
                 
             if not est_au_sol and not est_sur_eau:
                 modifierAcceleration(balle, (0, -ACCELERATION_GRAVITATIONNELLE))
@@ -701,6 +706,32 @@ def traite_entrees():
             fini = True
         traiterEntreeEcranDeJeu(evenement)
 
+def initialiserMusique():
+    global type_music, sound_1, sound_2
+    pygame.mixer.init()
+    
+    type_music = 'accueil'
+    pygame.mixer.music.load(MUSIQUE_ACCUEIL) # musique
+    pygame.mixer.music.play(-1)
+    sound_1 = pygame.mixer.Channel(1)
+    sound_2 = pygame.mixer.Channel(2)
+
+def start_musique(path):
+    if pygame.mixer.music.get_busy() == False:
+        pygame.mixer.music.load(path)
+        pygame.mixer.music.play(-1)
+
+def stop_musique(temps):
+    pygame.mixer.music.fadeout(temps)
+
+def playSound(son):
+    if sound_1.get_busy() == False:
+        sound_1.play(son)
+    elif sound_2.get_busy() == False:
+        sound_2.play(son)
+    else:
+        sound_1.play(son)
+
 # Initialisation
 pygame.init()
 
@@ -718,12 +749,25 @@ IMAGE_PIECE = creerImage("images/piece.png", (PIECE_LARGEUR, PIECE_HAUTEUR))
 IMAGE_PIECE_TABLEAU_DE_BORD = creerImage("images/piece.png", (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR))
 IMAGE_BALLE_TABLEAU_DE_BORD = creerImage("images/ball/ball.0.png", (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR))
 
+MUSIQUE_JEU = "sons/accueil.mp3" # chemin vers musique jeu
+MUSIQUE_ACCUEIL = "sons/accueil.mp3"  # chemin vers musique accueil
+MUSIQUE_GAMEOVER = "sons/accueil.mp3" # chemin vers musique gameover
+
+SON_PIECE = pygame.mixer.Sound("sons/coin.mp3") # musique
+SON_PIECE.set_volume(0.7)
+SON_SAUT = pygame.mixer.Sound("sons/jump.mp3") # musique
+SON_COLLISION_SOL = pygame.mixer.Sound("sons/coin.mp3") # musique
+SON_COLLISION_BRIQUE = pygame.mixer.Sound("sons/coin.mp3") # musique
+SON_COLLISION_EAU = pygame.mixer.Sound("sons/coin.mp3") # musique
+SON_BRIQUE_CASSE = pygame.mixer.Sound("sons/coin.mp3") # musique
+
 IMAGES_BALLE = []
 j = 1
 k = 0
 for i in range(16):
     chemin = "images/ball/ball." + str(k) + ".png"
     IMAGES_BALLE.append(createBalleImage(chemin))
+    # Calcul pour k +30,+15,+15,+30 en boucle
     j = (j + (i % 2)) % 2
     k += 15 + (j * 15)
 
@@ -732,7 +776,7 @@ enJeu = False
 scene = nouvelleScene()
 balle = creerBalle()
 peut_sauter = False
-score = 0 #equivalent à la distance parcouru
+score = 0 #equivalent à la distance parcourue
 score_piece = 0
 horloge = pygame.time.Clock()
 temps_depart = pygame.time.get_ticks()
@@ -740,6 +784,7 @@ dernier_temps_jeux = pygame.time.get_ticks()
 dernier_temps_eau = None
 dernier_de_touche = None
 
+initialiserMusique()
 initialiserEcranJeu()
 
 while not fini:
