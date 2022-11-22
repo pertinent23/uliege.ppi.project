@@ -4,102 +4,63 @@ import math
 
 # Constantes
 
-TITRE = "BOUNCE TALES"
-
 TYPE_SOL = "sol"
 TYPE_BALLE = "balle"
 TYPE_EAU = "eau"
 TYPE_PIECE = "piece"
-TYPE_BRICK = "brick"
-TYPE_BROKEN_BRICK = "broken-brick"
 
 NOIR = (0, 0, 0)
 BLANC = (255, 255, 255)
 JAUNE = (255, 200, 0)
 
-FENETRE_LARGEUR = 1000 #en px
-FENETRE_HAUTEUR = 600 #en px
+FENETRE_LARGEUR = 1000
+FENETRE_HAUTEUR = 600
 
-FENETRE_MARGE_EXTERNE = 200 #en px
-FENETRE_MARGE_INTERNE = 175 #en px
+FENETRE_MARGE_EXTERNE = 200
+FENETRE_MARGE_INTERNER = 50
 
-BALLE_RAYON = 30 #en px
-BALLE_POSITION = FENETRE_LARGEUR // 3 #en px
-BALLE_TOUCHE_MARGE = 2 #en px
+BALLE_RAYON = 30
+BALLE_POSITION = FENETRE_LARGEUR // 3
+BALLE_TOUCHE_MARGE = 2
 
-PIECE_LARGEUR = 60 #en px
-PIECE_HAUTEUR = 60 #en px
-PIECE_MARGE = 10 #en px
+PIECE_LARGEUR = 60
+PIECE_HAUTEUR = 60
+PIECE_MARGE = 10
 PIECE_DELAI = 300 # en px
 
-SOL_HAUTEUR = 370 #en px
-SOL_LARGEUR = 120 #en px
-SOL_MARGE_HORIZONTALE = 10 #en px
-SOL_MARGE_VERTICALE = 40 #en px
+SOL_HAUTEUR = 370
+SOL_LARGEUR = 120
+SOL_MARGE_HORIZONTALE = 8
+SOL_MARGE_VERTICALE = 40
 
-SOL_POSITION_MINIMALE = - SOL_HAUTEUR + SOL_MARGE_VERTICALE * 2 #en px
-SOL_POSITION_MAXIMALE = 0 #en px
+SOL_POSITION_MINIMALE = - SOL_HAUTEUR + SOL_MARGE_VERTICALE * 2
+SOL_POSITION_MAXIMALE = 0
 
 EAU_HAUTEUR = 368
 EAU_LARGEUR = 120
-EAU_POSITION_MINIMALE = - EAU_HAUTEUR + SOL_MARGE_VERTICALE * 2 #en px
-EAU_POSITION_MAXIMALE = 0 #en px
-EAU_INTERVAL = 37000 #en ms
-
-OCEAN_LONGUEUR_MINIMALE = 1500 #en px
-OCEAN_LONGUEUR_MAXIMALE = 5000 #en px
-OCEAN_INTERVAL = 25000 #en ms
-
-BRICK_HAUTEUR = 50 #en px
-BRICK_LARGEUR = 120 #en px
-BRICK_MARGE = 50 #en px
+EAU_POSITION_MINIMALE = - EAU_HAUTEUR + SOL_MARGE_VERTICALE * 2
+EAU_POSITION_MAXIMALE = 0
+EAU_INTERVAL = 15000 #en ms
 
 VITESSE_HORIZONTALE = 0.2 # px/s
 VITESSE_VERTICALE = 0.6 # px/s
 
 ACCELERATION_GRAVITATIONNELLE = 0.002 # px/s/s
-ACCELERATION_HORIZONTALE = 0.0008 #px/s/s
+ACCELERATION_HORIZONTALE = 0.0008
 
-TEMPS_DE_TOUCHE_MAXIMALE = 150 #en ms
+TEMPS_DE_TOUCHE_MAXIMALE = 150
 
-IMAGES_PAR_SECONDE = 40 #en px
+IMAGES_PAR_SECONDE = 40
 
-SAUTE_DELAI = 300 #en ms
-
-JUNGLE_INTERVAL = 57000 #en ms
-JUNGLE_LONGUEUR_MINIMALE = 1500 #en px
-JUNGLE_LONGUEUR_MAXIMALE = 5000 #en px
-
-TABLEAU_DE_BORD_LARGEUR = 100 #en px
-TABLEAU_DE_BORD_HAUTEUR = 25 #en px
-TABLEAU_DE_BORD_MARGE = 3 #en px
-TABLEAU_DE_BORD_X = 100 #en px 
-TABLEAU_DE_BORD_Y = 13 #en px
+TABLEAU_DE_BORD_LARGEUR = 100
+TABLEAU_DE_BORD_HAUTEUR = 25
+TABLEAU_DE_BORD_MARGE = 3
+TABLEAU_DE_BORD_X = 100
+TABLEAU_DE_BORD_Y = 13
 TABLEAU_DE_BORD_TAILLE_POLICE = 20
 
-IMAGE_TABLEAU_DE_BORD_LARGEUR = 30 #en px
-IMAGE_TABLEAU_DE_BORD_HAUTEUR = 30 #en px
-
-ECRAN_DE_JEUX_POLICE_TAILLE = 80
-
-ECRAN_SELECTION_NIVEAU_POLICE_TAILLE = 30
-
-WALL_DIMENSIONS = 90
-NIVEAU_WALL_DIMENSIONS = 50
-WALL_MARGE = 15
-
-
-# Utilisé pour la gestion des écrans
-
-ECRAN_ACCUEIL = 1
-ECRAN_SELECTION_NIVEAU = 2
-ECRAN_DE_JEUX = 3
-
-# Utilisé pour la gestion des niveaux
-
-NIVEAU_FACILE = 3.1
-NIVEAU_NORMAL = 3.2
-NIVEAU_DIFFICILE = 3.3
+IMAGE_TABLEAU_DE_BORD_LARGEUR = 30
+IMAGE_TABLEAU_DE_BORD_HAUTEUR = 30
 
 # Fin Constantes
 
@@ -121,8 +82,8 @@ def preprareScene(scene, background):
     
     fenetre.blit(background, (0,0))
     
-def afficherScene(scene):
-    preprareScene(scene, IMAGE_SCENE)    
+def afficherScene(scene, background):
+    preprareScene(scene, background)    
 
 def ajouterEntite(scene, entitee):
     scene["entites"].append(entitee)
@@ -214,9 +175,9 @@ def progresserAnimation(entite):
         
         if vx > 0:
             if vx > VITESSE_HORIZONTALE:
-                actuelle += 2
+                actuelle += 2;
             else:
-                actuelle += 1
+                actuelle += 1;
             
         if actuelle >= nbr_poses:
             actuelle = 0
@@ -335,24 +296,6 @@ def creerPiecePour(entite):
     
     return entite
 
-def creerBrickPour(entite, cassable = False):
-    
-    x, y = positionEntite(entite)
-    largeur, hauteur = tailleEntite(entite)
-    
-    entite = nouvelleEntite(TYPE_BRICK if not cassable else TYPE_BROKEN_BRICK, IMAGE_BRICK if not cassable else IMAGE_BROKENABLE_BRICK)
-    
-    x += (largeur - BRICK_LARGEUR)/2
-    y += hauteur + BRICK_MARGE
-    
-    modifierPosition(entite, (x, y))
-    modifierTaille(entite, (BRICK_LARGEUR, BRICK_HAUTEUR))
-    modifierAcceleration(entite, (0,0))
-    modifierVitesse(entite, (-VITESSE_HORIZONTALE, 0))
-    modifierDernierTemps(entite, pygame.time.get_ticks())
-    
-    return entite
-
 def generer_pas(y, max = SOL_POSITION_MAXIMALE, min = SOL_POSITION_MINIMALE, marge = SOL_MARGE_VERTICALE):
     marge_hauter_haut = (max - y) // marge 
     marge_hauter_bas = (y - min) // marge 
@@ -384,117 +327,44 @@ def generer_hauteur(position_y_precedente, hauteur_precedente, type_precedente, 
     
     return hauteur
 
-def ajouter_piece(resultat):
-    global score
-    if score > PIECE_DELAI and random.randint(0, 10) > 5:
-        resultat.append(creerPiecePour(resultat[len(resultat)-1]))
-    return resultat
-
 def generer_entite(dernier_entite, position_precedente, taille_precedente, maintenant):
-    global IMAGE_SOL, score, dernier_temps_eau, dernier_temps_ocean, dernier_temps_jungle, ecran_actuel
+    global IMAGE_SOL, score, dernier_temps_eau
     
     x = position_precedente[0] + taille_precedente[0] - SOL_MARGE_HORIZONTALE
     hauteur = 0
     resultat = list()
     
-    if score > BALLE_POSITION and ecran_actuel == ECRAN_DE_JEUX:
-        if dernier_temps_jungle and typeEntite(dernier_entite) == TYPE_SOL and maintenant - dernier_temps_jungle > JUNGLE_INTERVAL and random.randint(0, 10) > 7: 
-            dernier_temps_jungle = maintenant
-            longeur = random.randint(JUNGLE_LONGUEUR_MINIMALE, JUNGLE_LONGUEUR_MAXIMALE)
-            total = 0
-            block_existe = 0
-            y = position_precedente[1]
+    if score > BALLE_POSITION / 2:
+        if score > BALLE_POSITION:
             
-            if y < SOL_POSITION_MAXIMALE:
-                while y + SOL_MARGE_VERTICALE < SOL_POSITION_MAXIMALE:
-                    y += SOL_MARGE_VERTICALE
-                    entite = creerSol((x + total - SOL_MARGE_HORIZONTALE, y))
-                    total += tailleEntite(entite)[0]
-                    resultat.append(entite)
-                    resultat = ajouter_piece(resultat)
-            
-            while total < longeur:
-                entite = None
+            if not dernier_temps_eau or maintenant - dernier_temps_eau > EAU_INTERVAL:
+                dernier_temps_eau = maintenant
+                hauteur = generer_hauteur(position_precedente[1], taille_precedente[1], typeEntite(dernier_entite), TYPE_EAU)
                 
-                if block_existe:
-                    if random.randint(0, 10) > 7:
-                        entite = creerSol((x + total - SOL_MARGE_HORIZONTALE, y))
-                        block_existe = 1
-                    else:
-                        entite = creerSol((x + total - SOL_MARGE_HORIZONTALE, SOL_POSITION_MINIMALE))
-                        block_existe = 0
-                    resultat.append(entite)
-                    
-                else:
-                    block_existe = 1
-                    entite = creerSol((x + total - SOL_MARGE_HORIZONTALE, y))
-                    resultat.append(entite)
-                    resultat = ajouter_piece(resultat)
-                
-                total += tailleEntite(entite)[0]
-            
-            return resultat
-        
-        elif dernier_temps_ocean and typeEntite(dernier_entite) != TYPE_EAU and maintenant - dernier_temps_ocean > OCEAN_INTERVAL and random.randint(0, 10) > 9:
-            dernier_temps_ocean = maintenant
-            dernier_temps_eau = maintenant
-            longeur = random.randint(OCEAN_LONGUEUR_MINIMALE, OCEAN_LONGUEUR_MAXIMALE)
-            total = 0
-            brick_existe = 0
-            
-            while total < longeur:
-                hauteur = generer_hauteur(position_precedente[1], taille_precedente[1], typeEntite(dernier_entite), TYPE_EAU) 
-                entite = creerEau((x + total, hauteur - SOL_MARGE_HORIZONTALE))
-                total += tailleEntite(entite)[0]
-                
-                resultat.append(entite)
-                
-                if not brick_existe or random.randint(0, 100) > 5:
-                    if brick_existe and random.randint(0, 100) > 93:
-                        brick_existe = 0
-                        resultat.append(creerBrickPour(entite, True))
-                    else:
-                        brick_existe = 1
-                        resultat.append(creerBrickPour(entite))
-                    resultat = ajouter_piece(resultat)
-                else:
-                    brick_existe = 0
-            
-            return resultat
-        
-        elif dernier_temps_eau and typeEntite(dernier_entite) != TYPE_EAU and maintenant - dernier_temps_eau > EAU_INTERVAL:
-            dernier_temps_eau = maintenant
-            dernier_temps_ocean = maintenant
-            hauteur = generer_hauteur(position_precedente[1], taille_precedente[1], typeEntite(dernier_entite), TYPE_EAU) 
-            resultat.append(creerEau((x, hauteur)))
+                resultat.append(creerEau((x, hauteur)))
+            else:
+                hauteur = generer_hauteur(position_precedente[1], taille_precedente[1], typeEntite(dernier_entite), TYPE_SOL)
+                resultat.append(creerSol((x, hauteur)))
             
         else:
             hauteur = generer_hauteur(position_precedente[1], taille_precedente[1], typeEntite(dernier_entite), TYPE_SOL)
             resultat.append(creerSol((x, hauteur)))
-        
-        if not dernier_temps_eau:
-            dernier_temps_eau = maintenant
-        
-        if not dernier_temps_ocean:
-            dernier_temps_ocean = maintenant
-        
-        if not dernier_temps_jungle:
-            dernier_temps_jungle = maintenant
     else:
         resultat.append(creerSol((x, SOL_POSITION_MINIMALE)))
+        
+    if score > PIECE_DELAI and random.randint(0, 10) > 5:
+        resultat.append(creerPiecePour(resultat[len(resultat)-1]))
     
-    return ajouter_piece(resultat)
-
-def nettoyerScene(scene):
-    for entite in listEntite(scene):
-        x, y = positionEntite(entite)
-        hauteur = tailleEntite(entite)[1]
-        if x < -FENETRE_MARGE_EXTERNE or y > FENETRE_HAUTEUR + FENETRE_MARGE_EXTERNE * 2 or y + hauteur < -FENETRE_MARGE_EXTERNE:
-            listEntite(scene).remove(entite)
+    return resultat
 
 def remplirScene(scene, maintenant):
-    nettoyerScene(scene)
     nombre_elements = nombreElementScene(scene)
+    
+    if nombre_elements > 0:
+        for entite in listEntite(scene):
+            if positionEntite(entite)[0] < -FENETRE_MARGE_EXTERNE:
+                listEntite(scene).remove(entite)
+                nombre_elements -= 1
         
     derniere_position = (0,0)
     derniere_taille = (0,0)
@@ -528,7 +398,7 @@ def mru_position(position, vitesse, acceleration, dt):
     vx0, vy0 = vitesse
     ax, ay = acceleration
     
-    return (x0 + vx0 * dt + 0.5 * ax * dt**2, y0 + vy0 * dt  + 0.5 * ay * dt**2)
+    return (x0 + vx0 * dt + 0.5 * ax * dt ** 2, y0 + vy0 * dt  + 0.5 * ay * dt ** 2)
 
 def miseAJourEntite(scene, maintenant, change_pose):
     nbr = nombreElementScene(scene)
@@ -560,9 +430,7 @@ def afficheEntite(scene):
     
     for entite in entites:
         if estVisible(entite):
-            x, y = positionEntite(entite)
-            y -= camera_deplacement_verticale
-            fenetre.blit(imageEntite(entite), repere_vers_pygame((x, y), tailleEntite(entite)))
+            fenetre.blit(imageEntite(entite), repere_vers_pygame(positionEntite(entite), tailleEntite(entite)))
 
 def creerImage(path, taille):
     global fenetre
@@ -570,13 +438,10 @@ def creerImage(path, taille):
     return pygame.transform.scale(pygame.image.load(path).convert_alpha(fenetre), taille) 
     
 
-def creerMusique(path = ""):
-    return pygame.mixer.Sound(path)
-
 def generer_vitesse_saut():
     global dernier_de_touche
     
-    temps = pygame.time.get_ticks() - dernier_de_touche
+    temps = pygame.time.get_ticks()  - dernier_de_touche
     
     if temps > TEMPS_DE_TOUCHE_MAXIMALE:
         temps = TEMPS_DE_TOUCHE_MAXIMALE
@@ -586,8 +451,8 @@ def generer_vitesse_saut():
     dernier_de_touche = None
     return VITESSE_VERTICALE * (temps/(TEMPS_DE_TOUCHE_MAXIMALE/2))
 
-def faireSauterBalle(maintenant):
-    global balle, peut_sauter, dernier_temps_saut, dernier_de_touche
+def faireSauterBalle():
+    global balle, peut_sauter
     
     if peut_sauter:
         vx = vitesseEntite(balle)[0]
@@ -599,9 +464,6 @@ def faireSauterBalle(maintenant):
         modifierVitesse(balle, (vx, generer_vitesse_saut()))
         modifierAcceleration(balle, (ax,-ACCELERATION_GRAVITATIONNELLE))
         playSound(SON_SAUT)
-        dernier_temps_saut = None
-    else:
-        dernier_temps_saut = maintenant
 
 def estPoseSur(entite1, entite2, marge):
     y1 = positionEntite(entite1)[1]
@@ -634,7 +496,7 @@ def vaTomber(direction_chute, id_collision, nombre_de_collision):
     return (direction_chute < 0 and id_collision == 0) or (direction_chute > 0 and id_collision+1 == nombre_de_collision)
 
 def collisionBalle():
-    global balle, scene, peut_sauter, score_piece, camera_deplacement_verticale
+    global balle, scene, peut_sauter, score_piece
     
     entites = [item for item in listEntite(scene) if item != balle]
     collisions = collision_avec(balle, entites)
@@ -653,9 +515,8 @@ def collisionBalle():
             #Pour vérifier que la balle est posée 
             #Sur l'entité en question
             if estPoseSur(balle, entite, BALLE_TOUCHE_MARGE):
-                etype = typeEntite(entite)
                 
-                if etype == TYPE_SOL or etype == TYPE_BRICK or etype == TYPE_BROKEN_BRICK:
+                if typeEntite(entite) == TYPE_SOL:
                     est_au_sol = peut_sauter  = True
                     direction_chute = peutTomber(balle, entite)
                     
@@ -663,12 +524,9 @@ def collisionBalle():
                         #Pour contrer la gravité de la balle
                         #lorsque la balle touche le sol
                         modifierPosition(balle, (xb, positionEntite(entite)[1]+tailleEntite(entite)[1]-BALLE_TOUCHE_MARGE))
-                        modifierVitesse(balle, (vitesseEntite(balle)[0], 0))
+                        modifierVitesse(balle, (vitesseEntite(balle)[0],0))
                         modifierAcceleration(balle, (0,0))
-                        if etype == TYPE_SOL:
-                            playSound(SON_COLLISION_SOL)
-                        else:
-                            playSound(SON_COLLISION_BRIQUE)
+                        playSound(SON_COLLISION_SOL)
                     else:
                         if positionEntite(balle)[0] < BALLE_POSITION:
                             #Pour que la balle retrouve
@@ -685,23 +543,16 @@ def collisionBalle():
                         #été coincé derrière un obstacle
                         if direction_chute < 0:
                             modifierPosition(balle, (positionEntite(entite)[0] - BALLE_RAYON * 2 + BALLE_TOUCHE_MARGE, positionEntite(balle)[1]))
-                        
-                        if vitesseEntite(balle)[0] <= 0:
-                            modifierVitesse(balle, (VITESSE_HORIZONTALE*direction_chute, vitesseEntite(balle)[1]))
+                        modifierVitesse(balle, (VITESSE_HORIZONTALE*direction_chute, vitesseEntite(balle)[1]))
                         
                         if not est_sur_eau:
                             modifierAcceleration(balle, (ACCELERATION_HORIZONTALE, -ACCELERATION_GRAVITATIONNELLE))
                             
                     elif positionEntite(balle)[0] < BALLE_POSITION:
                         modifierVitesse(balle, (VITESSE_HORIZONTALE, vitesseEntite(balle)[1]))
-                    elif etype == TYPE_BROKEN_BRICK:
-                        modifierImage(entite, IMAGE_BROKEN_BRICK)
-                        modifierPosition(balle, (positionEntite(balle)[0] + BALLE_TOUCHE_MARGE, positionEntite(entite)[1] - BALLE_RAYON))
-                        modifierAcceleration(balle, (ACCELERATION_HORIZONTALE, -ACCELERATION_GRAVITATIONNELLE))
-                        playSound(SON_BRIQUE_CASSE)
                     
                         
-                elif etype == TYPE_EAU:
+                elif typeEntite(entite) == TYPE_EAU:
                     direction_chute = peutTomber(balle, entite)
                     est_sur_eau = True
                     
@@ -718,7 +569,7 @@ def collisionBalle():
                         #pour eviter de sauter violement après avoir
                         #été coincé derrière un obstacle
                         if direction_chute < 0:
-                            modifierPosition(balle, (positionEntite(entite)[0] - BALLE_RAYON*2 + BALLE_TOUCHE_MARGE, positionEntite(balle)[1]))
+                            modifierPosition(balle, (positionEntite(entite)[0] - BALLE_RAYON * 2 + BALLE_TOUCHE_MARGE, positionEntite(balle)[1]))
                         modifierVitesse(balle, (VITESSE_HORIZONTALE*direction_chute, vitesseEntite(balle)[1]))
                         
                         if not est_sur_eau:
@@ -727,10 +578,9 @@ def collisionBalle():
                     elif positionEntite(balle)[0] < BALLE_POSITION:
                         modifierVitesse(balle, (VITESSE_HORIZONTALE, vitesseEntite(balle)[1]))
                         
-                elif etype == TYPE_PIECE:
-                    if vitesseEntite(entite)[1] == 0:
-                        score_piece += 1
-                    modifierVitesse(entite, (-VITESSE_HORIZONTALE, VITESSE_VERTICALE))
+                elif typeEntite(entite) == TYPE_PIECE:
+                    score_piece += 1
+                    modifierVitesse(entite, (-VITESSE_HORIZONTALE, VITESSE_HORIZONTALE))
                     playSound(SON_PIECE)
             else:
                 
@@ -738,14 +588,12 @@ def collisionBalle():
                     direction_vitesse = 0
                     if positionEntite(balle)[0] < positionEntite(entite)[0]:
                         direction_vitesse = -1
-                        modifierPosition(balle, (positionEntite(entite)[0] - BALLE_RAYON*2 + BALLE_TOUCHE_MARGE, positionEntite(balle)[1]))
 
                     modifierVitesse(balle, (VITESSE_HORIZONTALE*direction_vitesse, vitesseEntite(balle)[1]))
                 
                 elif typeEntite(entite) == TYPE_PIECE:
-                    if vitesseEntite(entite)[1] == 0:
-                        score_piece += 1
-                    modifierVitesse(entite, (-VITESSE_HORIZONTALE, VITESSE_VERTICALE))
+                    score_piece += 1
+                    modifierVitesse(entite, (-VITESSE_HORIZONTALE, VITESSE_HORIZONTALE))
                     playSound(SON_PIECE)
                 
             if not est_au_sol and not est_sur_eau:
@@ -757,24 +605,20 @@ def collisionBalle():
         modifierVitesse(balle, (0, vitesseEntite(balle)[1]))
         modifierAcceleration(balle, (0, -ACCELERATION_GRAVITATIONNELLE))
         peut_sauter = False
-        
-        if positionEntite(balle)[1] - FENETRE_HAUTEUR + FENETRE_MARGE_INTERNE >= 0:
-            camera_deplacement_verticale = positionEntite(balle)[1] - FENETRE_HAUTEUR + FENETRE_MARGE_INTERNE
-            
     
 def dessinerTableauDeBord(maintenant):
-    global dernier_de_touche, fenetre, police_tableau_de_bord, score, score_piece
+    global dernier_de_touche, fenetre, police, score, score_piece
     
-    #Affichage du score du au parcour
     fenetre.blit(IMAGE_BALLE_TABLEAU_DE_BORD, repere_vers_pygame((30, FENETRE_HAUTEUR * 0.9), (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR)))
+    
     texte = " {0:.1f}".format(score)
-    image = police_tableau_de_bord.render(texte, True, JAUNE)
+    image = police.render(texte, True, JAUNE)
     fenetre.blit(image, repere_vers_pygame((30 + IMAGE_TABLEAU_DE_BORD_LARGEUR + 10, FENETRE_HAUTEUR*0.9 + TABLEAU_DE_BORD_TAILLE_POLICE/5), (TABLEAU_DE_BORD_TAILLE_POLICE, TABLEAU_DE_BORD_TAILLE_POLICE)))
     
-    #Affichage du score du aux pieces
     fenetre.blit(IMAGE_PIECE_TABLEAU_DE_BORD, repere_vers_pygame((30, FENETRE_HAUTEUR * 0.9 - 40), (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR)))
+    
     texte = " {0}".format(score_piece)
-    image = police_tableau_de_bord.render(texte, True, JAUNE)
+    image = police.render(texte, True, JAUNE)
     fenetre.blit(image, repere_vers_pygame((30 + IMAGE_TABLEAU_DE_BORD_LARGEUR + 10, FENETRE_HAUTEUR*0.9 + TABLEAU_DE_BORD_TAILLE_POLICE/5 - 40), (TABLEAU_DE_BORD_TAILLE_POLICE, TABLEAU_DE_BORD_TAILLE_POLICE)))
     
     if dernier_de_touche:
@@ -792,64 +636,7 @@ def dessinerTableauDeBord(maintenant):
         pygame.draw.rect(fenetre, BLANC, rect, TABLEAU_DE_BORD_MARGE, 1)
         pygame.draw.rect(fenetre, BLANC, pygame.Rect(x, y, largeur, TABLEAU_DE_BORD_HAUTEUR))
 
-def dessinerEcranAccueilMessage():
-    global fenetre, police_tableau_de_bord, police_ecran_de_jeu
-    
-    #Affichage du titre du Jaune
-    image = police_ecran_de_jeu.render(TITRE, True, JAUNE)
-    taille = image.get_rect()
-    x = (FENETRE_LARGEUR - taille.width)/2
-    y = FENETRE_HAUTEUR/2
-    i = x - WALL_MARGE * 2
-    while i < x + taille.width:
-        fenetre.blit(IMAGE_WALL, (i, y - WALL_DIMENSIONS))
-        i += WALL_DIMENSIONS
-    fenetre.blit(image, repere_vers_pygame((x, y), (taille.width, taille.height)))
-
-    
-    image = police_tableau_de_bord.render("appuyez sur [espace]", True, JAUNE)
-    taille = image.get_rect()
-    x = (FENETRE_LARGEUR - taille.width)/2
-    y -= WALL_MARGE + taille.height
-    fenetre.blit(image, repere_vers_pygame((x, y), (taille.width, taille.height)))
-
-
-def dessinerEcranNiveauMessage():
-    global fenetre, police_ecran_de_niveau, police_ecran_de_jeu, niveau_actuel
-    
-    increment = FENETRE_HAUTEUR/6
-    y = increment * 4
-    niveaux = [("FACILE", NIVEAU_FACILE), ("NORMAL", NIVEAU_NORMAL), ("DIFFICILE", NIVEAU_DIFFICILE)]
-    
-    for niveau in niveaux:
-        image = police_ecran_de_niveau.render(niveau[0], True, JAUNE if niveau_actuel == niveau[1] else BLANC)
-        taille = image.get_rect()
-        
-        i = (FENETRE_LARGEUR/7)*2.5
-        
-        if niveau_actuel == niveau[1]:
-            marge = WALL_MARGE/2
-            largeur = math.ceil((FENETRE_LARGEUR/7)*1.5/NIVEAU_WALL_DIMENSIONS) * NIVEAU_WALL_DIMENSIONS + marge*2
-            hauteur = NIVEAU_WALL_DIMENSIONS + marge*2
-            x0, y0 = repere_vers_pygame((i-marge, y-marge), (largeur, hauteur))
-            rect = pygame.Rect(x0, y0, largeur, hauteur)
-            pygame.draw.rect(fenetre, JAUNE, rect, 0, 4)
-        
-        while i < (FENETRE_LARGEUR/6) * 3.5:
-            fenetre.blit(IMAGE_NIVEAU_WALL, repere_vers_pygame((i, y), (NIVEAU_WALL_DIMENSIONS, NIVEAU_WALL_DIMENSIONS)))
-            i += NIVEAU_WALL_DIMENSIONS
-            
-        x = (i - (FENETRE_LARGEUR/7)*2.5 - taille.width)/2 + (FENETRE_LARGEUR/7)*2.5
-        fenetre.blit(image, repere_vers_pygame((x, y + (NIVEAU_WALL_DIMENSIONS - taille.height)/2), (taille.width, taille.height)))
-        y -= increment
-    
-    image = police_tableau_de_bord.render("appuyez sur [monter] et [descendre] ou [espace] pour valider", True, JAUNE)
-    taille = image.get_rect()
-    x = (FENETRE_LARGEUR - taille.width)/2
-    y = WALL_MARGE
-    fenetre.blit(image, repere_vers_pygame((x, y), (taille.width, taille.height)))
-
-def creerBalleImage(path):   
+def createBalleImage(path):   
     return creerImage(path, (BALLE_RAYON*2, BALLE_RAYON*2))
 
 def creerBalle():
@@ -868,43 +655,18 @@ def creerBalle():
     
     return reveillerEntite(balle)
 
-def afficherTerrainClassique(maintenant):
-    global scene, balle, score, temps_depart, dernier_temps_jeux, dernier_de_touche
-    
-    change_pose = True
-    for t in range(temps_depart, maintenant+1):
-        miseAJourEntite(scene, t, change_pose)
-        change_pose = False
-    dernier_temps_jeux = maintenant
-    
-    if random.randint(0, 100) > 99:
-        dernier_de_touche = pygame.time.get_ticks()
-    
-    if dernier_de_touche and random.randint(0, 10) > 9:
-        faireSauterBalle(maintenant)
-    
-    remplirScene(scene, maintenant)
-    afficherScene(scene)
-    afficheEntite(scene)
-
 def initialiserEcranJeu():   
-    global scene, balle, temps_depart
-    
-    scene = nouvelleScene()
-    balle = creerBalle()
-    temps_depart = pygame.time.get_ticks()
-    
+    global scene, balle
+     
     ajouterEntite(scene, balle)
+    random.seed()
 
 def afficherEcranDeJeu(maintenant):
-    global scene, balle, dernier_temps_jeux, score, enJeu, fini, temps_depart, dernier_temps_saut, peut_sauter
+    global scene, balle, dernier_temps_jeux, score, enJeu, fini, temps_depart
     
     if enJeu:
         commencerAnimation(balle)
         change_pose = True
-        
-        if peut_sauter and dernier_temps_saut and maintenant - dernier_temps_saut < SAUTE_DELAI:
-            faireSauterBalle(maintenant)
         
         for t in range(temps_depart, maintenant+1):
             miseAJourEntite(scene, t, change_pose)
@@ -917,11 +679,11 @@ def afficherEcranDeJeu(maintenant):
         fini = True
     
     remplirScene(scene, maintenant)
-    afficherScene(scene)
+    afficherScene(scene, IMAGE_SCENE)
     afficheEntite(scene)
     dessinerTableauDeBord(maintenant)
 
-def traiterEntreeEcranDeJeu(evenement, maintenant):
+def traiterEntreeEcranDeJeu(evenement):
     global enJeu, dernier_temps_jeux, dernier_de_touche
     if evenement.type == pygame.KEYDOWN:
         if not enJeu:
@@ -934,87 +696,25 @@ def traiterEntreeEcranDeJeu(evenement, maintenant):
         if enJeu:
             if evenement.key == pygame.K_SPACE:
                if dernier_de_touche:
-                   faireSauterBalle(maintenant)
-
-def initialiserEcranAccueil():   
-    global scene, balle, temps_depart
-    
-    scene = nouvelleScene()
-    balle = creerBalle()
-    temps_depart = pygame.time.get_ticks()
-    
-    random.seed() 
-    
-    modifierPosition(balle, (positionEntite(balle)[0], SOL_POSITION_MINIMALE + SOL_HAUTEUR))
-    ajouterEntite(scene, balle)
-    commencerAnimation(balle)
-
-def afficherEcranAccueil(maintenant):
-    afficherTerrainClassique(maintenant)
-    dessinerEcranAccueilMessage()
-
-def traiterEntreeEcranAccueil(evenement):
-    global ecran_actuel
-    if evenement.type == pygame.KEYDOWN:
-        if evenement.key == pygame.K_SPACE:
-            ecran_actuel = ECRAN_SELECTION_NIVEAU
-
-def afficherEcranNiveau(maintenant):
-    afficherTerrainClassique(maintenant)
-    dessinerEcranNiveauMessage()
-
-def traiterEntreeEcranNiveau(evenement):
-    global ecran_actuel, niveau_actuel
-    if evenement.type == pygame.KEYDOWN:
-        
-        if evenement.key == pygame.K_SPACE:
-            ecran_actuel = ECRAN_DE_JEUX
-            initialiserEcranJeu()
-            
-        elif evenement.key == pygame.K_ESCAPE:
-            ecran_actuel = ECRAN_ACCUEIL
-            
-        elif evenement.key == pygame.K_UP:
-            if niveau_actuel == NIVEAU_DIFFICILE:
-                niveau_actuel = NIVEAU_NORMAL
-            elif niveau_actuel == NIVEAU_NORMAL:
-                niveau_actuel = NIVEAU_FACILE
-            else:
-                niveau_actuel = NIVEAU_DIFFICILE
-                
-        elif evenement.key == pygame.K_DOWN:
-            if niveau_actuel == NIVEAU_FACILE:
-                niveau_actuel = NIVEAU_NORMAL
-            elif niveau_actuel == NIVEAU_NORMAL:
-                niveau_actuel = NIVEAU_DIFFICILE
-            else:
-                niveau_actuel = NIVEAU_FACILE
-
-def traite_entrees(maintenant = 0):
+                   faireSauterBalle()
+                   
+def traite_entrees():
     global fini
     
     for evenement in pygame.event.get():
         if evenement.type == pygame.QUIT:
             fini = True
-        
-        if ecran_actuel == ECRAN_DE_JEUX:
-            traiterEntreeEcranDeJeu(evenement, maintenant)
-        elif ecran_actuel == ECRAN_ACCUEIL:
-            traiterEntreeEcranAccueil(evenement)
-        elif ecran_actuel == ECRAN_SELECTION_NIVEAU:
-            traiterEntreeEcranNiveau(evenement)
+        traiterEntreeEcranDeJeu(evenement)
 
 def initialiserMusique():
-    global type_music, sound_piece, sound_saut, sound_collision
+    global type_music, sound_1, sound_2
     pygame.mixer.init()
     
     type_music = 'accueil'
     pygame.mixer.music.load(MUSIQUE_ACCUEIL) # musique
     pygame.mixer.music.play(-1)
-    pygame.mixer.music.set_volume(0.2)
-    sound_piece = pygame.mixer.Channel(1)
-    sound_saut = pygame.mixer.Channel(2)
-    sound_collision = pygame.mixer.Channel(3)
+    sound_1 = pygame.mixer.Channel(1)
+    sound_2 = pygame.mixer.Channel(2)
 
 def start_musique(path):
     if pygame.mixer.music.get_busy() == False:
@@ -1024,37 +724,24 @@ def start_musique(path):
 def stop_musique(temps):
     pygame.mixer.music.fadeout(temps)
 
-def creer_son(path, volume):
-    son = pygame.mixer.Sound(path)
-    son.set_volume(volume)
-    return son
-
-
 def playSound(son):
-    if son == SON_PIECE:
-        sound_piece.play(son)
-    elif son == SON_SAUT:
-        sound_saut.play(son)
+    if sound_1.get_busy() == False:
+        sound_1.play(son)
+    elif sound_2.get_busy() == False:
+        sound_2.play(son)
     else:
-        sound_collision.play(son)
+        sound_1.play(son)
 
 # Initialisation
 pygame.init()
 
 dimensions_fenetre = (FENETRE_LARGEUR, FENETRE_HAUTEUR)
+police = pygame.font.SysFont("ubuntu", TABLEAU_DE_BORD_TAILLE_POLICE, True)
 fenetre = pygame.display.set_mode(dimensions_fenetre)
-
 pygame.display.set_caption("Bounce Tales")
 
 IMAGE_SOL = creerImage("images/ground.png", (SOL_LARGEUR, SOL_HAUTEUR))
 IMAGE_EAU = creerImage("images/water.png", (EAU_LARGEUR, EAU_HAUTEUR))
-
-IMAGE_WALL = creerImage("images/wall.png", (WALL_DIMENSIONS, WALL_DIMENSIONS))
-IMAGE_NIVEAU_WALL = creerImage("images/wall.png", (NIVEAU_WALL_DIMENSIONS, NIVEAU_WALL_DIMENSIONS))
-
-IMAGE_BRICK = creerImage("images/brick.png", (BRICK_LARGEUR, BRICK_HAUTEUR))
-IMAGE_BROKENABLE_BRICK = creerImage("images/brokenable.wall.png", (BRICK_LARGEUR, BRICK_HAUTEUR))
-IMAGE_BROKEN_BRICK = creerImage("images/broken.wall.png", (BRICK_LARGEUR, BRICK_HAUTEUR))
 
 IMAGE_SCENE = creerImage("images/trees-7191822_1280.png", (FENETRE_LARGEUR, FENETRE_HAUTEUR))
 IMAGE_PIECE = creerImage("images/piece.png", (PIECE_LARGEUR, PIECE_HAUTEUR))
@@ -1062,70 +749,51 @@ IMAGE_PIECE = creerImage("images/piece.png", (PIECE_LARGEUR, PIECE_HAUTEUR))
 IMAGE_PIECE_TABLEAU_DE_BORD = creerImage("images/piece.png", (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR))
 IMAGE_BALLE_TABLEAU_DE_BORD = creerImage("images/ball/ball.0.png", (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR))
 
-MUSIQUE_JEU = "music/track_2.mp3" # chemin vers musique jeu
-MUSIQUE_ACCUEIL = "music/track_1.mp3"  # chemin vers musique accueil
-MUSIQUE_GAMEOVER = "music/accueil.mp3" # chemin vers musique gameover
+MUSIQUE_JEU = "sons/accueil.mp3" # chemin vers musique jeu
+MUSIQUE_ACCUEIL = "sons/accueil.mp3"  # chemin vers musique accueil
+MUSIQUE_GAMEOVER = "sons/accueil.mp3" # chemin vers musique gameover
 
-SON_PIECE = creer_son("music/piece.mp3", 0.3) # musique
-SON_SAUT = creer_son("music/jump.mp3", 0.5) # musique
-SON_COLLISION_SOL = creer_son("music/sol.mp3", 1) # musique
-SON_COLLISION_BRIQUE = creer_son("music/coin.mp3", 1) # musique
-SON_COLLISION_EAU = creer_son("music/splash.mp3", 1) # musique
-SON_BRIQUE_CASSE = creer_son("music/coin.mp3", 1) # musique
+SON_PIECE = pygame.mixer.Sound("sons/coin.mp3") # musique
+SON_PIECE.set_volume(0.7)
+SON_SAUT = pygame.mixer.Sound("sons/jump.mp3") # musique
+SON_COLLISION_SOL = pygame.mixer.Sound("sons/coin.mp3") # musique
+SON_COLLISION_BRIQUE = pygame.mixer.Sound("sons/coin.mp3") # musique
+SON_COLLISION_EAU = pygame.mixer.Sound("sons/coin.mp3") # musique
+SON_BRIQUE_CASSE = pygame.mixer.Sound("sons/coin.mp3") # musique
 
 IMAGES_BALLE = []
 j = 1
 k = 0
 for i in range(16):
     chemin = "images/ball/ball." + str(k) + ".png"
-    IMAGES_BALLE.append(creerBalleImage(chemin))
+    IMAGES_BALLE.append(createBalleImage(chemin))
     # Calcul pour k +30,+15,+15,+30 en boucle
     j = (j + (i % 2)) % 2
     k += 15 + (j * 15)
 
 fini = False
-enPause = False
 enJeu = False
-scene = None #Va contenir la scene de chaque écran
-balle = None #Va contenir la balle de chaque ecran
+scene = nouvelleScene()
+balle = creerBalle()
 peut_sauter = False
-
-ecran_actuel = ECRAN_ACCUEIL
-niveau_actuel = NIVEAU_FACILE
-
-police_tableau_de_bord = pygame.font.SysFont("ubuntu", TABLEAU_DE_BORD_TAILLE_POLICE, True)
-police_ecran_de_jeu = pygame.font.SysFont("ubuntu", ECRAN_DE_JEUX_POLICE_TAILLE, True)
-police_ecran_de_niveau = pygame.font.SysFont("ubuntu", ECRAN_SELECTION_NIVEAU_POLICE_TAILLE, True)
-
-score = 0 #equivalent à la distance parcouru
+score = 0 #equivalent à la distance parcourue
 score_piece = 0
-
 horloge = pygame.time.Clock()
-temps_depart = None #Va contenir le temps de depart de chaque scene
+temps_depart = pygame.time.get_ticks()
 dernier_temps_jeux = pygame.time.get_ticks()
-dernier_temps_saut = None
 dernier_temps_eau = None
-dernier_temps_ocean = None
 dernier_de_touche = None
-dernier_temps_jungle = None
-
-camera_deplacement_verticale = 0
 
 initialiserMusique()
-initialiserEcranAccueil()
+initialiserEcranJeu()
 
 while not fini:
+    traite_entrees()
+    
     maintenant = pygame.time.get_ticks()
     fenetre.fill(NOIR)
     
-    traite_entrees(maintenant)
-    
-    if ecran_actuel == ECRAN_DE_JEUX:
-        afficherEcranDeJeu(maintenant)
-    elif ecran_actuel == ECRAN_ACCUEIL:
-        afficherEcranAccueil(maintenant)
-    elif ecran_actuel == ECRAN_SELECTION_NIVEAU:
-        afficherEcranNiveau(maintenant)
+    afficherEcranDeJeu(maintenant)
     
     pygame.display.flip()
     horloge.tick(IMAGES_PAR_SECONDE)
