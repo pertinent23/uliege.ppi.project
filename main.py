@@ -14,62 +14,80 @@ NOIR = (0, 0, 0)
 BLANC = (255, 255, 255)
 JAUNE = (255, 200, 0)
 
-FENETRE_LARGEUR = 1000
-FENETRE_HAUTEUR = 600
+FENETRE_LARGEUR = 1000 #en px
+FENETRE_HAUTEUR = 600 #en px
 
-FENETRE_MARGE_EXTERNE = 200
-FENETRE_MARGE_INTERNE = 175
+FENETRE_MARGE_EXTERNE = 200 #en px
+FENETRE_MARGE_INTERNE = 175 #en px
 
-BALLE_RAYON = 30
-BALLE_POSITION = FENETRE_LARGEUR // 3
-BALLE_TOUCHE_MARGE = 2
+BALLE_RAYON = 30 #en px
+BALLE_POSITION = FENETRE_LARGEUR // 3 #en px
+BALLE_TOUCHE_MARGE = 2 #en px
 
-PIECE_LARGEUR = 60
-PIECE_HAUTEUR = 60
-PIECE_MARGE = 10
+PIECE_LARGEUR = 60 #en px
+PIECE_HAUTEUR = 60 #en px
+PIECE_MARGE = 10 #en px
 PIECE_DELAI = 300 # en px
 
-SOL_HAUTEUR = 370
-SOL_LARGEUR = 120
-SOL_MARGE_HORIZONTALE = 8
-SOL_MARGE_VERTICALE = 40
+SOL_HAUTEUR = 370 #en px
+SOL_LARGEUR = 120 #en px
+SOL_MARGE_HORIZONTALE = 10 #en px
+SOL_MARGE_VERTICALE = 40 #en px
 
-SOL_POSITION_MINIMALE = - SOL_HAUTEUR + SOL_MARGE_VERTICALE * 2
-SOL_POSITION_MAXIMALE = 0
+SOL_POSITION_MINIMALE = - SOL_HAUTEUR + SOL_MARGE_VERTICALE * 2 #en px
+SOL_POSITION_MAXIMALE = 0 #en px
 
 EAU_HAUTEUR = 368
 EAU_LARGEUR = 120
-EAU_POSITION_MINIMALE = - EAU_HAUTEUR + SOL_MARGE_VERTICALE * 2
-EAU_POSITION_MAXIMALE = 0
+EAU_POSITION_MINIMALE = - EAU_HAUTEUR + SOL_MARGE_VERTICALE * 2 #en px
+EAU_POSITION_MAXIMALE = 0 #en px
 EAU_INTERVAL = 37000 #en ms
 
-OCEAN_LONGEUR_MINIMALE = 1500 #en px
-OCEAN_LONGEUR_MAXIMALE = 5000 #en px
+OCEAN_LONGUEUR_MINIMALE = 1500 #en px
+OCEAN_LONGUEUR_MAXIMALE = 5000 #en px
 OCEAN_INTERVAL = 25000 #en ms
 
-BRICK_HAUTEUR = 50
-BRICK_LARGEUR = 120
-BRICK_MARGE = 50
+BRICK_HAUTEUR = 50 #en px
+BRICK_LARGEUR = 120 #en px
+BRICK_MARGE = 50 #en px
 
 VITESSE_HORIZONTALE = 0.2 # px/s
 VITESSE_VERTICALE = 0.6 # px/s
 
 ACCELERATION_GRAVITATIONNELLE = 0.002 # px/s/s
-ACCELERATION_HORIZONTALE = 0.0008 
+ACCELERATION_HORIZONTALE = 0.0008 #px/s/s
 
-TEMPS_DE_TOUCHE_MAXIMALE = 150
+TEMPS_DE_TOUCHE_MAXIMALE = 150 #en ms
 
-IMAGES_PAR_SECONDE = 40
+IMAGES_PAR_SECONDE = 40 #en px
 
-TABLEAU_DE_BORD_LARGEUR = 100
-TABLEAU_DE_BORD_HAUTEUR = 25
-TABLEAU_DE_BORD_MARGE = 3
-TABLEAU_DE_BORD_X = 100
-TABLEAU_DE_BORD_Y = 13
+SAUTE_DELAI = 300 #en ms
+
+JUNGLE_INTERVAL = 57000 #en ms
+JUNGLE_LONGUEUR_MINIMALE = 1500 #en px
+JUNGLE_LONGUEUR_MAXIMALE = 5000 #en px
+
+TABLEAU_DE_BORD_LARGEUR = 100 #en px
+TABLEAU_DE_BORD_HAUTEUR = 25 #en px
+TABLEAU_DE_BORD_MARGE = 3 #en px
+TABLEAU_DE_BORD_X = 100 #en px 
+TABLEAU_DE_BORD_Y = 13 #en px
 TABLEAU_DE_BORD_TAILLE_POLICE = 20
 
-IMAGE_TABLEAU_DE_BORD_LARGEUR = 30
-IMAGE_TABLEAU_DE_BORD_HAUTEUR = 30
+IMAGE_TABLEAU_DE_BORD_LARGEUR = 30 #en px
+IMAGE_TABLEAU_DE_BORD_HAUTEUR = 30 #en px
+
+# Utilisé pour la gestion des écrans
+
+ECRAN_ACCUEIL = 1
+ECRAN_SELECTION_NIVEAU = 2
+ECRAN_DE_JEUX = 3
+
+# Utilisé pour la gestion des niveaux
+
+NIVEAU_FACILE = 3.1
+NIVEAU_NORMAL = 3.2
+NIVEAU_DIFFICILE = 3.3
 
 # Fin Constantes
 
@@ -361,17 +379,54 @@ def ajouter_piece(resultat):
     return resultat
 
 def generer_entite(dernier_entite, position_precedente, taille_precedente, maintenant):
-    global IMAGE_SOL, score, dernier_temps_eau, dernier_temps_ocean
+    global IMAGE_SOL, score, dernier_temps_eau, dernier_temps_ocean, dernier_temps_jungle
     
     x = position_precedente[0] + taille_precedente[0] - SOL_MARGE_HORIZONTALE
     hauteur = 0
     resultat = list()
     
     if score > BALLE_POSITION:
-        if dernier_temps_ocean and typeEntite(dernier_entite) != TYPE_EAU and maintenant - dernier_temps_ocean > OCEAN_INTERVAL and random.randint(0, 10) > 9:
+        if dernier_temps_jungle and typeEntite(dernier_entite) == TYPE_SOL and maintenant - dernier_temps_jungle > JUNGLE_INTERVAL and random.randint(0, 10) > 7: 
+            dernier_temps_jungle = maintenant
+            longeur = random.randint(JUNGLE_LONGUEUR_MINIMALE, JUNGLE_LONGUEUR_MAXIMALE)
+            total = 0
+            block_existe = 0
+            y = position_precedente[1]
+            
+            if y < SOL_POSITION_MAXIMALE:
+                while y + SOL_MARGE_VERTICALE < SOL_POSITION_MAXIMALE:
+                    y += SOL_MARGE_VERTICALE
+                    entite = creerSol((x + total - SOL_MARGE_HORIZONTALE, y))
+                    total += tailleEntite(entite)[0]
+                    resultat.append(entite)
+                    resultat = ajouter_piece(resultat)
+            
+            while total < longeur:
+                entite = None
+                
+                if block_existe:
+                    if random.randint(0, 10) > 7:
+                        entite = creerSol((x + total - SOL_MARGE_HORIZONTALE, y))
+                        block_existe = 1
+                    else:
+                        entite = creerSol((x + total - SOL_MARGE_HORIZONTALE, SOL_POSITION_MINIMALE))
+                        block_existe = 0
+                    resultat.append(entite)
+                    
+                else:
+                    block_existe = 1
+                    entite = creerSol((x + total - SOL_MARGE_HORIZONTALE, y))
+                    resultat.append(entite)
+                    resultat = ajouter_piece(resultat)
+                
+                total += tailleEntite(entite)[0]
+            
+            return resultat
+        
+        elif dernier_temps_ocean and typeEntite(dernier_entite) != TYPE_EAU and maintenant - dernier_temps_ocean > OCEAN_INTERVAL and random.randint(0, 10) > 9:
             dernier_temps_ocean = maintenant
             dernier_temps_eau = maintenant
-            longeur = random.randint(OCEAN_LONGEUR_MINIMALE, OCEAN_LONGEUR_MAXIMALE)
+            longeur = random.randint(OCEAN_LONGUEUR_MINIMALE, OCEAN_LONGUEUR_MAXIMALE)
             total = 0
             brick_existe = 0
             
@@ -410,6 +465,9 @@ def generer_entite(dernier_entite, position_precedente, taille_precedente, maint
         
         if not dernier_temps_ocean:
             dernier_temps_ocean = maintenant
+        
+        if not dernier_temps_jungle:
+            dernier_temps_jungle = maintenant
     else:
         resultat.append(creerSol((x, SOL_POSITION_MINIMALE)))
     
@@ -506,7 +564,7 @@ def creerMusique(path = ""):
 def generer_vitesse_saut():
     global dernier_de_touche
     
-    temps = pygame.time.get_ticks()  - dernier_de_touche
+    temps = pygame.time.get_ticks() - dernier_de_touche
     
     if temps > TEMPS_DE_TOUCHE_MAXIMALE:
         temps = TEMPS_DE_TOUCHE_MAXIMALE
@@ -530,7 +588,7 @@ def faireSauterBalle(maintenant):
         modifierAcceleration(balle, (ax,-ACCELERATION_GRAVITATIONNELLE))
         dernier_temps_saut = None
     else:
-        dernier_de_touche = dernier_temps_saut = maintenant
+        dernier_temps_saut = maintenant
 
 def estPoseSur(entite1, entite2, marge):
     y1 = positionEntite(entite1)[1]
@@ -610,7 +668,9 @@ def collisionBalle():
                         #été coincé derrière un obstacle
                         if direction_chute < 0:
                             modifierPosition(balle, (positionEntite(entite)[0] - BALLE_RAYON * 2 + BALLE_TOUCHE_MARGE, positionEntite(balle)[1]))
-                        modifierVitesse(balle, (VITESSE_HORIZONTALE*direction_chute, vitesseEntite(balle)[1]))
+                        
+                        if vitesseEntite(balle)[0] <= 0:
+                            modifierVitesse(balle, (VITESSE_HORIZONTALE*direction_chute, vitesseEntite(balle)[1]))
                         
                         if not est_sur_eau:
                             modifierAcceleration(balle, (ACCELERATION_HORIZONTALE, -ACCELERATION_GRAVITATIONNELLE))
@@ -761,7 +821,7 @@ def afficherEcranDeJeu(maintenant):
         commencerAnimation(balle)
         change_pose = True
         
-        if peut_sauter and dernier_temps_saut and maintenant - dernier_temps_saut < (1000/IMAGES_PAR_SECONDE):
+        if peut_sauter and dernier_temps_saut and maintenant - dernier_temps_saut < SAUTE_DELAI:
             faireSauterBalle(maintenant)
         
         for t in range(temps_depart, maintenant+1):
@@ -800,7 +860,13 @@ def traite_entrees(maintenant = 0):
     for evenement in pygame.event.get():
         if evenement.type == pygame.QUIT:
             fini = True
-        traiterEntreeEcranDeJeu(evenement, maintenant)
+        
+        if ecran_actuel == ECRAN_DE_JEUX:
+            traiterEntreeEcranDeJeu(evenement, maintenant)
+        elif ecran_actuel == ECRAN_ACCUEIL:
+            pass
+        elif ecran_actuel == ECRAN_SELECTION_NIVEAU:
+            pass
 
 # Initialisation
 pygame.init()
@@ -845,6 +911,7 @@ enJeu = False
 scene = None #Va contenir la scene de chaque écran
 balle = None #Va contenir la balle de chaque ecran
 peut_sauter = False
+ecran_actuel = ECRAN_DE_JEUX
 
 score = 0 #equivalent à la distance parcouru
 score_piece = 0
@@ -856,6 +923,7 @@ dernier_temps_saut = None
 dernier_temps_eau = None
 dernier_temps_ocean = None
 dernier_de_touche = None
+dernier_temps_jungle = None
 
 camera_deplacement_verticale = 0
 
@@ -865,8 +933,14 @@ while not fini:
     maintenant = pygame.time.get_ticks()
     fenetre.fill(NOIR)
     
-    afficherEcranDeJeu(maintenant)
     traite_entrees(maintenant)
+    
+    if ecran_actuel == ECRAN_DE_JEUX:
+        afficherEcranDeJeu(maintenant)
+    elif ecran_actuel == ECRAN_ACCUEIL:
+        pass
+    elif ecran_actuel == ECRAN_SELECTION_NIVEAU:
+        pass
     
     pygame.display.flip()
     horloge.tick(IMAGES_PAR_SECONDE)
