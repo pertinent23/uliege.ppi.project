@@ -9,6 +9,7 @@ TITRE = "BOUNCE TALES"
 TYPE_SOL = "sol"
 TYPE_BALLE = "balle"
 TYPE_EAU = "eau"
+TYPE_VIE = "vie"
 TYPE_PIECE = "piece"
 TYPE_BRICK = "brick"
 TYPE_BROKEN_BRICK = "broken-brick"
@@ -83,6 +84,11 @@ IMAGE_TABLEAU_DE_BORD_HAUTEUR = 30 #en px
 ECRAN_DE_JEUX_POLICE_TAILLE = 80
 
 ECRAN_SELECTION_NIVEAU_POLICE_TAILLE = 30
+
+FADE_SCREEN_TAILLE_POLICE = 15
+
+NOMBRE_DE_VIE_MAXIMUM = 3
+VIE_INTERVALLE = 20000 #en ms
 
 WALL_DIMENSIONS = 90
 NIVEAU_WALL_DIMENSIONS = 50
@@ -311,7 +317,7 @@ def creerEau(position):
     
     return entite
 
-def creerPiecePour(entite):
+def creerPiecePour(entite, type=TYPE_PIECE, image=None):
     
     x, y = positionEntite(entite)
     largeur, hauteur = tailleEntite(entite)
@@ -322,7 +328,7 @@ def creerPiecePour(entite):
     else:
         marge = random.randint(1, 3)
     
-    entite = nouvelleEntite(TYPE_PIECE, IMAGE_PIECE)
+    entite = nouvelleEntite(type, IMAGE_PIECE if not image else image)
     
     x += (largeur - PIECE_LARGEUR)/2
     y += hauteur + PIECE_MARGE * marge
@@ -385,9 +391,19 @@ def generer_hauteur(position_y_precedente, hauteur_precedente, type_precedente, 
     return hauteur
 
 def ajouter_piece(resultat):
-    global score
-    if score > PIECE_DELAI and random.randint(0, 10) > 5:
+    global score, ecran_actuel, nombre_de_vie, dernier_temps_vie
+    
+    maintenant = pygame.time.get_ticks()
+    
+    if dernier_temps_vie and nombre_de_vie < NOMBRE_DE_VIE_MAXIMUM and maintenant - dernier_temps_vie > VIE_INTERVALLE and random.randint(0, 1000) < 500:
+        resultat.append(creerPiecePour(resultat[len(resultat)-1], type=TYPE_VIE, image=IMAGE_VIE))
+        dernier_temps_vie = maintenant
+    elif score > PIECE_DELAI and random.randint(0, 10) > 5 and ecran_actuel == ECRAN_DE_JEUX:
         resultat.append(creerPiecePour(resultat[len(resultat)-1]))
+    
+    if not dernier_temps_vie:
+        dernier_temps_vie = maintenant
+        
     return resultat
 
 def generer_entite(dernier_entite, position_precedente, taille_precedente, maintenant):
@@ -397,7 +413,7 @@ def generer_entite(dernier_entite, position_precedente, taille_precedente, maint
     hauteur = 0
     resultat = list()
     
-    if score > BALLE_POSITION and ecran_actuel == ECRAN_DE_JEUX:
+    if score > BALLE_POSITION and ecran_actuel == ECRAN_DE_JEUX and dernier_entite:
         if dernier_temps_jungle and typeEntite(dernier_entite) == TYPE_SOL and maintenant - dernier_temps_jungle > JUNGLE_INTERVAL and random.randint(0, 10) > 7: 
             dernier_temps_jungle = maintenant
             longeur = random.randint(JUNGLE_LONGUEUR_MINIMALE, JUNGLE_LONGUEUR_MAXIMALE)
@@ -640,9 +656,9 @@ def vaTomber(direction_chute, id_collision, nombre_de_collision):
     return (direction_chute < 0 and id_collision == 0) or (direction_chute > 0 and id_collision+1 == nombre_de_collision)
 
 def collisionBalle():
-    global balle, scene, peut_sauter, score_piece, camera_deplacement_verticale
+    global balle, scene, peut_sauter, score_piece, camera_deplacement_verticale, nombre_de_vie
     
-    entites = [item for item in listEntite(scene) if item != balle]
+    entites = [item for item in listEntite(scene) if item != balle and estVisible(item)]
     collisions = collision_avec(balle, entites)
     id_collision = 0
     nombre_de_collision = len(collisions)
@@ -731,9 +747,14 @@ def collisionBalle():
                     if vitesseEntite(entite)[1] == 0:
                         score_piece += 1
                     modifierVitesse(entite, (-VITESSE_HORIZONTALE, VITESSE_VERTICALE))
+                elif etype == TYPE_VIE:
+                    endormirEntite(entite)
+                    if nombre_de_vie < NOMBRE_DE_VIE_MAXIMUM:
+                        nombre_de_vie += 1
             else:
+                etype = typeEntite(entite)
                 
-                if typeEntite(entite) == TYPE_SOL and not est_sur_eau:
+                if etype == TYPE_SOL and not est_sur_eau:
                     direction_vitesse = 0
                     if positionEntite(balle)[0] < positionEntite(entite)[0]:
                         direction_vitesse = -1
@@ -741,10 +762,15 @@ def collisionBalle():
 
                     modifierVitesse(balle, (VITESSE_HORIZONTALE*direction_vitesse, vitesseEntite(balle)[1]))
                 
-                elif typeEntite(entite) == TYPE_PIECE:
+                elif etype == TYPE_PIECE:
                     if vitesseEntite(entite)[1] == 0:
                         score_piece += 1
                     modifierVitesse(entite, (-VITESSE_HORIZONTALE, VITESSE_VERTICALE))
+                
+                elif etype == TYPE_VIE:
+                    endormirEntite(entite)
+                    if nombre_de_vie < NOMBRE_DE_VIE_MAXIMUM:
+                        nombre_de_vie += 1
                 
             if not est_au_sol and not est_sur_eau:
                 modifierAcceleration(balle, (0, -ACCELERATION_GRAVITATIONNELLE))
@@ -761,7 +787,7 @@ def collisionBalle():
             
     
 def dessinerTableauDeBord(maintenant):
-    global dernier_de_touche, fenetre, police_tableau_de_bord, score, score_piece
+    global dernier_de_touche, fenetre, police_tableau_de_bord, score, score_piece, nombre_de_vie
     
     #Affichage du score du au parcour
     fenetre.blit(IMAGE_BALLE_TABLEAU_DE_BORD, repere_vers_pygame((30, FENETRE_HAUTEUR * 0.9), (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR)))
@@ -774,6 +800,12 @@ def dessinerTableauDeBord(maintenant):
     texte = " {0}".format(score_piece)
     image = police_tableau_de_bord.render(texte, True, JAUNE)
     fenetre.blit(image, repere_vers_pygame((30 + IMAGE_TABLEAU_DE_BORD_LARGEUR + 10, FENETRE_HAUTEUR*0.9 + TABLEAU_DE_BORD_TAILLE_POLICE/5 - 40), (TABLEAU_DE_BORD_TAILLE_POLICE, TABLEAU_DE_BORD_TAILLE_POLICE)))
+    
+    #Affichage du score du aux pieces
+    i = 0
+    while i < nombre_de_vie:
+        fenetre.blit(IMAGE_VIE_TABLEAU_DE_BORD, repere_vers_pygame((30 + (IMAGE_TABLEAU_DE_BORD_LARGEUR + 10)*i, FENETRE_HAUTEUR * 0.9 - 80), (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR)))
+        i += 1
     
     if dernier_de_touche:
         x, y = repere_vers_pygame((TABLEAU_DE_BORD_X, TABLEAU_DE_BORD_Y), (TABLEAU_DE_BORD_LARGEUR, TABLEAU_DE_BORD_HAUTEUR))
@@ -846,7 +878,34 @@ def dessinerEcranNiveauMessage():
     x = (FENETRE_LARGEUR - taille.width)/2
     y = WALL_MARGE
     fenetre.blit(image, repere_vers_pygame((x, y), (taille.width, taille.height)))
-
+    
+def dessinerFadeEcran(message = ""):
+    global fenetre, police_ecran_de_niveau, police_fade_screen
+    
+    surface = pygame.Surface([FENETRE_LARGEUR, FENETRE_HAUTEUR], pygame.SRCALPHA)
+    surface.fill((0, 0, 0, 200))
+    surface = surface.convert_alpha()
+    
+    image = police_ecran_de_niveau.render(message, True, BLANC)
+    taille = image.get_rect()
+    x = (FENETRE_LARGEUR - taille.width)/2
+    y = (FENETRE_HAUTEUR - taille.height)/2
+    
+    surface.blit(image, repere_vers_pygame((x, y), (taille.width, taille.height)))
+    fenetre.blit(surface, (0, 0))
+    
+    image = police_fade_screen.render("[espace] pour commencer le jeu et sauter", True, BLANC)
+    taille = image.get_rect()
+    fenetre.blit(image, repere_vers_pygame((15, 60), (taille.width, taille.height)))
+    
+    image = police_fade_screen.render("[esc] pour entrer et sortir du mode pause", True, BLANC)
+    taille = image.get_rect()
+    fenetre.blit(image, repere_vers_pygame((15, 35), (taille.width, taille.height)))
+    
+    image = police_fade_screen.render("[effacer] pour retourner au menu principal à partir d'ici", True, BLANC)
+    taille = image.get_rect()
+    fenetre.blit(image, repere_vers_pygame((15, 10), (taille.width, taille.height)))
+    
 def creerBalleImage(path):   
     return creerImage(path, (BALLE_RAYON*2, BALLE_RAYON*2))
 
@@ -899,17 +958,34 @@ def afficherTerrainClassique(maintenant):
     afficherScene(scene)
     afficheEntite(scene)
 
-def initialiserEcranJeu():   
-    global scene, balle, temps_depart
+def initialiserEcranJeu(conserver_score=False, conserver_dernier_temps=False):   
+    global scene, balle, temps_depart, score, score_piece, enJeu, enPause, dernier_de_touche, dernier_temps_eau, nombre_de_vie
+    global dernier_temps_saut, dernier_temps_ocean, dernier_temps_jungle, dernier_temps_vie
     
     scene = nouvelleScene()
     balle = creerBalle()
     temps_depart = pygame.time.get_ticks()
     
+    if not conserver_score:
+        score = 0
+        score_piece = 0
+        nombre_de_vie = NOMBRE_DE_VIE_MAXIMUM
+    
+    if not conserver_dernier_temps:
+        dernier_temps_saut = None
+        dernier_temps_eau = None
+        dernier_temps_ocean = None
+        dernier_de_touche = None
+        dernier_temps_jungle = None
+        dernier_temps_vie = None
+    
+    enJeu = False
+    enPause = False
+    
     ajouterEntite(scene, balle)
 
 def afficherEcranDeJeu(maintenant):
-    global scene, balle, dernier_temps_jeux, score, enJeu, enPause, fini, temps_depart, dernier_temps_saut, peut_sauter
+    global scene, balle, dernier_temps_jeux, score, enJeu, enPause, fini, temps_depart, dernier_temps_saut, peut_sauter, enGameOver, nombre_de_vie
     
     if enJeu and not enPause:
         commencerAnimation(balle)
@@ -927,23 +1003,42 @@ def afficherEcranDeJeu(maintenant):
     else:
         miseAJourDernierTemps(scene, maintenant)
     
-    if not estEntite(scene, balle):
-        fini = True
-    
     if not enPause:
         remplirScene(scene, maintenant)
         
     afficherScene(scene)
     afficheEntite(scene)
     dessinerTableauDeBord(maintenant)
+    
+    if not enJeu:
+        if nombre_de_vie < NOMBRE_DE_VIE_MAXIMUM:
+            dessinerFadeEcran("OUPS!")
+        else:
+            dessinerFadeEcran("PREPARES TOI!")
+    elif enPause:
+        dessinerFadeEcran("PAUSE")
+    elif not estEntite(scene, balle):
+        if nombre_de_vie:
+            nombre_de_vie -= 1
+            initialiserEcranJeu(conserver_score=True, conserver_dernier_temps=True)
+        else:
+            enGameOver = True
+            dessinerFadeEcran("GAME OVER")
 
 def traiterEntreeEcranDeJeu(evenement, maintenant):
-    global enJeu, dernier_temps_jeux, dernier_de_touche, enPause
+    global enJeu, dernier_temps_jeux, dernier_de_touche, enPause, ecran_actuel, enGameOver
     if evenement.type == pygame.KEYDOWN:
+        
+        if (enPause or enGameOver or not enJeu) and evenement.key == pygame.K_BACKSPACE:
+            enGameOver = False
+            ecran_actuel = ECRAN_ACCUEIL
+            initialiserEcranAccueil()
+                
         if not enJeu:
-            enJeu = True  
-            dernier_temps_jeux = pygame.time.get_ticks()
-        else:
+            if evenement.key == pygame.K_SPACE:
+                enJeu = True  
+                dernier_temps_jeux = pygame.time.get_ticks()
+        else:   
             if evenement.key == pygame.K_SPACE:
                 dernier_de_touche = pygame.time.get_ticks()
             elif evenement.key == pygame.K_ESCAPE:
@@ -951,8 +1046,8 @@ def traiterEntreeEcranDeJeu(evenement, maintenant):
     elif evenement.type == pygame.KEYUP:
         if enJeu:
             if evenement.key == pygame.K_SPACE:
-               if dernier_de_touche:
-                   faireSauterBalle(maintenant)
+                if dernier_de_touche:
+                    faireSauterBalle(maintenant)
 
 def initialiserEcranAccueil():   
     global scene, balle, temps_depart
@@ -1042,8 +1137,10 @@ IMAGE_BROKEN_BRICK = creerImage("images/broken.wall.png", (BRICK_LARGEUR, BRICK_
 
 IMAGE_SCENE = creerImage("images/trees-7191822_1280.png", (FENETRE_LARGEUR, FENETRE_HAUTEUR))
 IMAGE_PIECE = creerImage("images/piece.png", (PIECE_LARGEUR, PIECE_HAUTEUR))
+IMAGE_VIE = creerImage("images/receive.png", (PIECE_LARGEUR, PIECE_HAUTEUR))
 
 IMAGE_PIECE_TABLEAU_DE_BORD = creerImage("images/piece.png", (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR))
+IMAGE_VIE_TABLEAU_DE_BORD = creerImage("images/heart.png", (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR))
 IMAGE_BALLE_TABLEAU_DE_BORD = creerImage("images/ball/ball.0.png", (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR))
 
 IMAGE_BALLE = creerBalleImage("images/ball/ball.0.png")
@@ -1066,6 +1163,7 @@ IMAGE_BALLE_330_DEG = creerBalleImage("images/ball/ball.330.png")
 fini = False
 enPause = False
 enJeu = False
+enGameOver = False
 scene = None #Va contenir la scene de chaque écran
 balle = None #Va contenir la balle de chaque ecran
 peut_sauter = False
@@ -1074,24 +1172,26 @@ ecran_actuel = ECRAN_ACCUEIL
 niveau_actuel = NIVEAU_FACILE
 
 police_tableau_de_bord = pygame.font.SysFont("ubuntu", TABLEAU_DE_BORD_TAILLE_POLICE, True)
+police_fade_screen = pygame.font.SysFont("ubuntu", FADE_SCREEN_TAILLE_POLICE)
 police_ecran_de_jeu = pygame.font.SysFont("ubuntu", ECRAN_DE_JEUX_POLICE_TAILLE, True)
 police_ecran_de_niveau = pygame.font.SysFont("ubuntu", ECRAN_SELECTION_NIVEAU_POLICE_TAILLE, True)
 
 score = 0 #equivalent à la distance parcouru
 score_piece = 0
+nombre_de_vie = NOMBRE_DE_VIE_MAXIMUM
 
 horloge = pygame.time.Clock()
 temps_depart = None #Va contenir le temps de depart de chaque scene
 dernier_temps_jeux = pygame.time.get_ticks()
 dernier_temps_saut = None
 dernier_temps_eau = None
+dernier_temps_vie = None
 dernier_temps_ocean = None
 dernier_de_touche = None
 dernier_temps_jungle = None
 
 camera_deplacement_verticale = 0
 
-#initialiserEcranJeu()
 initialiserEcranAccueil()
 
 while not fini:
