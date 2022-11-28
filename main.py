@@ -407,7 +407,7 @@ def ajouter_piece(resultat):
     
     maintenant = pygame.time.get_ticks()
     
-    if dernier_temps_vie and nombre_de_vie < NOMBRE_DE_VIE_MAXIMUM and maintenant - dernier_temps_vie > VIE_INTERVALLE and random.randint(0, 1000) < 3:
+    if dernier_temps_vie and nombre_de_vie < NOMBRE_DE_VIE_MAXIMUM and maintenant - dernier_temps_vie > VIE_INTERVALLE and random.randint(0, 1000) < 7:
         resultat.append(creerPiecePour(resultat[len(resultat)-1], type=TYPE_VIE, image=IMAGE_VIE))
         dernier_temps_vie = maintenant
     elif score > PIECE_DELAI and random.randint(0, 10) > 5 and ecran_actuel == ECRAN_DE_JEUX:
