@@ -116,7 +116,7 @@ NIVEAU_DIFFICILE = 3.3
 # Fin Constantes
 
 # Ici nous transformons une entité en Objet
-# Rect utilisable part pygame
+# Rect utilisable par pygame
 def rectangle(entite):
     x, y = positionEntite(entite)
     return imageEntite(entite).get_rect().move(x, y)
@@ -146,6 +146,43 @@ def ajouterEntite(scene, entitee):
     
 def listEntite(scene):
     return scene["entites"]
+    
+def nombreElementScene(scene):
+    return len(listEntite(scene))
+
+def derniereEntite(scene, types=[]):
+    nbr = nombreElementScene(scene)
+    
+    if nbr > 0:
+        entites = listEntite(scene)
+        
+        if len(types) == 0:
+            return entites[nbr-1]
+        
+        i = nbr-1
+        
+        while i >= 0 and types.count(typeEntite(entites[i])) == 0:
+            i -= 1 
+            
+        if i >= 0:
+            return entites[i]
+    return None
+
+def premiereEntite(scene, types=[]):
+    nbr = nombreElementScene(scene)
+    if nbr> 0:
+        entites = listEntite(scene)
+        if len(types) == 0:
+            return entites[0]
+        
+        i = 0
+        
+        while i<nbr and types.count(typeEntite(entites[i])) == 0:
+            i += 1
+        
+        if i < nbr:
+            return entites[i]
+    return None        
 
 # Gestion des entités
 
@@ -257,43 +294,6 @@ def progresserAnimation(entite):
             
         modifierPoseActuelle(entite, actuelle)
         modifierImage(entite, listPoses(entite)[actuelle])
-
-def nombreElementScene(scene):
-    return len(listEntite(scene))
-
-def derniereEntite(scene, types=[]):
-    nbr = nombreElementScene(scene)
-    
-    if nbr > 0:
-        entites = listEntite(scene)
-        
-        if len(types) == 0:
-            return entites[nbr-1]
-        
-        i = nbr-1
-        
-        while i >= 0 and types.count(typeEntite(entites[i])) == 0:
-            i -= 1 
-            
-        if i >= 0:
-            return entites[i]
-    return None
-
-def premiereEntite(scene, types=[]):
-    nbr = nombreElementScene(scene)
-    if nbr> 0:
-        entites = listEntite(scene)
-        if len(types) == 0:
-            return entites[0]
-        
-        i = 0
-        
-        while i<nbr and types.count(typeEntite(entites[i])) == 0:
-            i += 1
-        
-        if i < nbr:
-            return entites[i]
-    return None        
 
 def reveillerEntite(entite):
     entite["visible"] = True
@@ -545,13 +545,13 @@ def remplirScene(scene, maintenant):
                 derniere_position = positionEntite(dernier)
                 derniere_taille = tailleEntite(dernier)
  
-def mru_vitesse(vitesse, acceleration, dt):
+def mrua_vitesse(vitesse, acceleration, dt):
     vx0, vy0 = vitesse
     ax, ay = acceleration
     
     return (vx0 + ax * dt, vy0 + ay * dt)
     
-def mru_position(position, vitesse, acceleration, dt):
+def mrua_position(position, vitesse, acceleration, dt):
     x0, y0 = position
     vx0, vy0 = vitesse
     ax, ay = acceleration
@@ -569,8 +569,8 @@ def miseAJourEntite(scene, maintenant, change_pose):
             vitesse = vitesseEntite(entite)
             acceleration = accelerationEntite(entite)
             
-            vitesse = mru_vitesse(vitesse, acceleration, dt)
-            position = mru_position(position, vitesse, acceleration, dt)
+            vitesse = mrua_vitesse(vitesse, acceleration, dt)
+            position = mrua_position(position, vitesse, acceleration, dt)
             
             modifierVitesse(entite, vitesse)
             modifierPosition(entite, position)
@@ -600,8 +600,6 @@ def afficheEntite(scene):
             fenetre.blit(imageEntite(entite), repere_vers_pygame((x, y), tailleEntite(entite)))
 
 def creerImage(path, taille):
-    global fenetre
-    
     return pygame.transform.scale(pygame.image.load(path).convert_alpha(fenetre), taille) 
     
 
@@ -624,7 +622,7 @@ def generer_vitesse_saut():
 # Gestion des collisions
 
 def faireSauterBalle(maintenant):
-    global balle, peut_sauter, dernier_temps_saut, dernier_de_touche
+    global balle, dernier_temps_saut
     
     if peut_sauter:
         vx = vitesseEntite(balle)[0]
