@@ -130,7 +130,24 @@ def repere_vers_pygame(position, taille):
 # Gestion des scènes
 def nouvelleScene():
     return {
-        "entites": []
+        "entites": [],
+        "temps_depart": None, #Va contenir le temps de depart de chaque scene
+        "dernier_temps_jeux": pygame.time.get_ticks(),
+        "dernier_temps_saut": None,
+        "dernier_temps_eau": None,
+        "dernier_temps_vie": None,
+        "dernier_temps_ocean": None,
+        "dernier_de_touche": None,
+        "dernier_temps_jungle": None,
+        "camera_deplacement_verticale": 0,
+        "score": 0, #equivalent à la distance parcouru
+        "score_piece": 0,
+        "nombre_de_vie": NOMBRE_DE_VIE_MAXIMUM,
+        "enPause": False,
+        "enJeu": False,
+        "enGameOver": False,
+        "balle": None,
+        "peut_sauter": False
     }
 
 def preprareScene(scene, background):
