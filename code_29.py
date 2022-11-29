@@ -93,6 +93,8 @@ ECRAN_SELECTION_NIVEAU_POLICE_TAILLE = 30
 
 FADE_SCREEN_TAILLE_POLICE = 15
 
+GAME_OVER_POLICE = 18
+
 NOMBRE_DE_VIE_MAXIMUM = 3
 VIE_INTERVALLE = 30000 #en ms
 
@@ -808,7 +810,7 @@ def lire_score(chemin):
 def ajout_score(scr, scr_pieces, chemin):
     #compare le nouveau score passé en paramètre avec le score enregistré dans le fichier dont le chemin est donné en paramètre, 
     #et remplace le code enregistré dans le fichier par le nouveau code dans le cas où le nouveau code est meilleur
-    with open(chemin, 'r+') as fichier:
+    with open(chemin, 'w+') as fichier:
         scores = lire_score(chemin)
         if len(scores)==0:
             fichier.write(str(scr)+" "+str(scr_pieces))
@@ -1044,17 +1046,25 @@ def afficherEcranDeJeu(maintenant):
             nombre_de_vie -= 1
             initialiserEcranJeu(conserver_score=True, conserver_dernier_temps=True)
         else:
-            
-              
+            if enGameOver == False:
+              ajout_score(score, score_piece,"score.txt")
+            best_score = lire_score("score.txt")
                
             enGameOver = True
-            
-            ajout_score(score, score_piece,"score.txt")
-            best_score = lire_score("score.txt")
-            mes="Best Score:\n"+ "Distance:"+ str(best_score[0])+ "\n" + "Coins:" + str(best_score[1])
+            mes="Best Score:\n"+ "Distance:"+ "{0:.1f}".format(best_score[0])+ "\n" + "Coins:" + str(best_score[1])
             dessinerFadeEcran("GAME OVER")
+            afficherGameOver(mes)
 
+def afficherGameOver(message):
 
+    messages = message.split("\n")
+
+    decallage = 0
+    for mes in messages:
+        image = police_game_over.render(mes, True, BLANC)
+        taille = image.get_rect()
+        fenetre.blit(image, repere_vers_pygame((FENETRE_LARGEUR / 2 - taille.width / 2, 200 - decallage), (taille.width, taille.height)))
+        decallage += 25
 
 def traiterEntreeEcranDeJeu(evenement, maintenant):
     global enJeu, dernier_temps_jeux, dernier_de_touche, enPause, enGameOver
@@ -1203,6 +1213,7 @@ police_tableau_de_bord = pygame.font.SysFont("ubuntu", TABLEAU_DE_BORD_TAILLE_PO
 police_fade_screen = pygame.font.SysFont("ubuntu", FADE_SCREEN_TAILLE_POLICE)
 police_ecran_de_jeu = pygame.font.SysFont("ubuntu", ECRAN_DE_JEUX_POLICE_TAILLE, True)
 police_ecran_de_niveau = pygame.font.SysFont("ubuntu", ECRAN_SELECTION_NIVEAU_POLICE_TAILLE, True)
+police_game_over = pygame.font.SysFont("ubuntu", GAME_OVER_POLICE, True)
 
 score = 0 #equivalent à la distance parcouru
 score_piece = 0
