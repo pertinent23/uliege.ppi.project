@@ -748,8 +748,6 @@ def creerMusique(path = ""):
     return pygame.mixer.Sound(path)
 
 def generer_vitesse_saut():
-    global scene
-    
     temps = pygame.time.get_ticks() - dernierTempsToucheScene(scene)
     
     if temps > TEMPS_DE_TOUCHE_MAXIMALE:
@@ -764,8 +762,6 @@ def generer_vitesse_saut():
 # Gestion des collisions
 
 def faireSauterBalle(maintenant):
-    global scene
-    
     if ballePeutSauterSurScene(scene):
         vx = vitesseEntite(balleScene(scene))[0]
         ax = accelerationEntite(balleScene(scene))[0]
@@ -810,8 +806,6 @@ def vaTomber(direction_chute, id_collision, nombre_de_collision):
     return (direction_chute < 0 and id_collision == 0) or (direction_chute > 0 and id_collision+1 == nombre_de_collision)
 
 def collisionBalle():
-    global scene
-    
     balle = balleScene(scene)
     entites = [item for item in listEntite(scene) if item != balle and estVisible(item)]
     collisions = collision_avec(balle, entites)
@@ -940,8 +934,6 @@ def collisionBalle():
             
     
 def dessinerTableauDeBord(maintenant):
-    global scene, police_tableau_de_bord
-    
     #Affichage du score du au parcour
     FENETRE.blit(IMAGE_BALLE_TABLEAU_DE_BORD, repere_vers_pygame((30, FENETRE_HAUTEUR * 0.9), (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR)))
     texte = " {0:.1f}".format(scoreScene(scene))
@@ -976,8 +968,6 @@ def dessinerTableauDeBord(maintenant):
         pygame.draw.rect(FENETRE, BLANC, pygame.Rect(x, y, largeur, TABLEAU_DE_BORD_HAUTEUR))
 
 def dessinerEcranAccueilMessage():
-    global FENETRE, police_tableau_de_bord, police_ecran_de_jeu
-    
     #Affichage du titre du Jaune
     image = police_ecran_de_jeu.render(TITRE, True, JAUNE)
     taille = image.get_rect()
@@ -1031,8 +1021,6 @@ def dessinerEcranNiveauMessage():
     FENETRE.blit(image, repere_vers_pygame((x, y), (taille.width, taille.height)))
     
 def dessinerFadeEcran(message = ""):
-    global FENETRE, police_ecran_de_niveau, police_fade_screen
-    
     surface = pygame.Surface((FENETRE_LARGEUR, FENETRE_HAUTEUR), pygame.SRCALPHA)
     surface.fill((0, 0, 0, 200))
     surface = surface.convert_alpha()
@@ -1061,8 +1049,6 @@ def creerBalleImage(path):
     return creerImage(path, (BALLE_RAYON*2, BALLE_RAYON*2))
 
 def creerBalle():
-    global IMAGES_BALLE
-    
     balle = nouvelleEntite(TYPE_BALLE, IMAGES_BALLE[0])
     
     modifierTaille(balle, (BALLE_RAYON*2, BALLE_RAYON*2))
@@ -1077,8 +1063,6 @@ def creerBalle():
     return reveillerEntite(balle)
 
 def afficherTerrainClassique(maintenant):
-    global scene
-    
     change_pose = True
     for t in range(tempsDepartScene(scene), maintenant+1):
         miseAJourEntite(scene, t, change_pose)
