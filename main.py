@@ -927,6 +927,7 @@ def traiterEntreeEcranDeJeu(evenement, maintenant):
         if not enJeu:
             enJeu = True  
             dernier_temps_jeux = pygame.time.get_ticks()
+            start_musique(MUSIQUE_JEU)
         else:
             if evenement.key == pygame.K_SPACE:
                 dernier_de_touche = pygame.time.get_ticks()
@@ -969,6 +970,7 @@ def traiterEntreeEcranNiveau(evenement):
         
         if evenement.key == pygame.K_SPACE:
             ecran_actuel = ECRAN_DE_JEUX
+            stop_musique(500)
             initialiserEcranJeu()
             
         elif evenement.key == pygame.K_ESCAPE:
@@ -1017,9 +1019,8 @@ def initialiserMusique():
     sound_collision = pygame.mixer.Channel(3)
 
 def start_musique(path):
-    if pygame.mixer.music.get_busy() == False:
-        pygame.mixer.music.load(path)
-        pygame.mixer.music.play(-1)
+    pygame.mixer.music.load(path)
+    pygame.mixer.music.play(-1)
 
 def stop_musique(temps):
     pygame.mixer.music.fadeout(temps)
@@ -1069,9 +1070,9 @@ MUSIQUE_GAMEOVER = "music/accueil.mp3" # chemin vers musique gameover
 SON_PIECE = creer_son("music/piece.mp3", 0.3) # musique
 SON_SAUT = creer_son("music/jump.mp3", 0.5) # musique
 SON_COLLISION_SOL = creer_son("music/sol.mp3", 1) # musique
-SON_COLLISION_BRIQUE = creer_son("music/coin.mp3", 1) # musique
+SON_COLLISION_BRIQUE = creer_son("music/brick_col.mp3", 1) # musique
 SON_COLLISION_EAU = creer_son("music/splash.mp3", 1) # musique
-SON_BRIQUE_CASSE = creer_son("music/coin.mp3", 1) # musique
+SON_BRIQUE_CASSE = creer_son("music/brick_break.mp3", 1) # musique
 
 IMAGES_BALLE = []
 j = 1
