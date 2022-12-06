@@ -113,6 +113,14 @@ NIVEAU_FACILE = 3.1
 NIVEAU_NORMAL = 3.2
 NIVEAU_DIFFICILE = 3.3
 
+# Utilisé pour la gestion de la vitesse
+
+SCORE_V_MAX = 100000
+FACTEUR_V_FACILE = 1
+FACTEUR_V_NORMAL = 1.4
+FACTEUR_V_DIFFICILE = 1.7
+FACTEUR_V_MAX = 1.8
+
 # Fin Constantes
 
 # Ici nous transformons une entité en Objet
@@ -390,10 +398,11 @@ def progresserAnimation(entite):
     nbr_poses = nombrePoses(entite)
     
     if nbr_poses > 0:
-        vx = vitesseEntite(entite)[0] + VITESSE_HORIZONTALE
+        vh = gestionVitesse()
+        vx = vitesseEntite(entite)[0]
         
-        if vx > 0:
-            if vx > VITESSE_HORIZONTALE:
+        if vx >= 0:
+            if vx > 0:
                 actuelle += 2
             else:
                 actuelle += 1
@@ -459,7 +468,7 @@ def creerSol(position):
     modifierPosition(entite, position)
     modifierTaille(entite, (SOL_LARGEUR, SOL_HAUTEUR))
     modifierAcceleration(entite, (0,0))
-    modifierVitesse(entite, (-VITESSE_HORIZONTALE, 0))
+    modifierVitesse(entite, (-gestionVitesse(), 0))
     modifierDernierTemps(entite, pygame.time.get_ticks())
     
     return entite
@@ -470,7 +479,7 @@ def creerEau(position):
     modifierPosition(entite, position)
     modifierTaille(entite, (EAU_LARGEUR, EAU_HAUTEUR))
     modifierAcceleration(entite, (0,0))
-    modifierVitesse(entite, (-VITESSE_HORIZONTALE, 0))
+    modifierVitesse(entite, (-gestionVitesse(), 0))
     modifierDernierTemps(entite, pygame.time.get_ticks())
     
     return entite
@@ -494,7 +503,7 @@ def creerPiecePour(entite, type=TYPE_PIECE, image=None):
     modifierPosition(entite, (x, y))
     modifierTaille(entite, (PIECE_LARGEUR, PIECE_HAUTEUR))
     modifierAcceleration(entite, (0,0))
-    modifierVitesse(entite, (-VITESSE_HORIZONTALE, 0))
+    modifierVitesse(entite, (-gestionVitesse(), 0))
     modifierDernierTemps(entite, pygame.time.get_ticks())
     
     return entite
@@ -512,7 +521,7 @@ def creerBrickPour(entite, cassable = False, marge = 1):
     modifierPosition(entite, (x, y))
     modifierTaille(entite, (BRICK_LARGEUR, BRICK_HAUTEUR))
     modifierAcceleration(entite, (0,0))
-    modifierVitesse(entite, (-VITESSE_HORIZONTALE, 0))
+    modifierVitesse(entite, (-gestionVitesse(), 0))
     modifierDernierTemps(entite, pygame.time.get_ticks())
     
     return entite
@@ -700,6 +709,23 @@ def mru_position(position, vitesse, acceleration, dt):
     
     return (x0 + vx0 * dt + 0.5 * ax * dt**2, y0 + vy0 * dt  + 0.5 * ay * dt**2)
 
+def gestionVitesse():
+    vitesse_initiale = 0
+    if niveauActuel(scene) == NIVEAU_FACILE:
+        vitesse_initiale = VITESSE_HORIZONTALE * FACTEUR_V_FACILE
+        facteur_niveau = VITESSE_HORIZONTALE * (FACTEUR_V_NORMAL - FACTEUR_V_FACILE)
+    elif niveauActuel(scene) == NIVEAU_NORMAL:
+        vitesse_initiale = VITESSE_HORIZONTALE * FACTEUR_V_NORMAL
+        facteur_niveau = VITESSE_HORIZONTALE * (FACTEUR_V_DIFFICILE - FACTEUR_V_NORMAL)
+    else:
+        vitesse_initiale = VITESSE_HORIZONTALE * FACTEUR_V_DIFFICILE
+        facteur_niveau = VITESSE_HORIZONTALE * (FACTEUR_V_MAX - FACTEUR_V_DIFFICILE)
+    
+    if scoreScene(scene) < SCORE_V_MAX:
+        return vitesse_initiale + (scoreScene(scene) / SCORE_V_MAX * facteur_niveau)
+    else:
+        return vitesse_initiale + (facteur_niveau / SCORE_V_MAX)
+
 def miseAJourEntite(scene, maintenant, change_pose):
     nbr = nombreElementScene(scene)
     dt = 0
@@ -737,8 +763,10 @@ def afficheEntite(scene):
     for entite in entites:
         if estVisible(entite):
             x, y = positionEntite(entite)
-            y -= cameraPositionScene(scene)
-            FENETRE.blit(imageEntite(entite), repere_vers_pygame((x, y), tailleEntite(entite)))
+            w, h = tailleEntite(entite)
+            if x + w <= FENETRE_LARGEUR + FENETRE_MARGE_EXTERNE:
+                y -= cameraPositionScene(scene)
+                FENETRE.blit(imageEntite(entite), repere_vers_pygame((x, y), (w, h)))
 
 def creerImage(path, taille):
     return pygame.transform.scale(pygame.image.load(path).convert_alpha(FENETRE), taille) 
@@ -767,7 +795,7 @@ def faireSauterBalle(maintenant):
         ax = accelerationEntite(balleScene(scene))[0]
         
         if vx < 0:
-            vx = VITESSE_HORIZONTALE
+            vx = gestionVitesse()
 
         modifierVitesse(balleScene(scene), (vx, generer_vitesse_saut()))
         modifierAcceleration(balleScene(scene), (ax,-ACCELERATION_GRAVITATIONNELLE))
@@ -855,13 +883,13 @@ def collisionBalle():
                             modifierPosition(balle, (positionEntite(entite)[0] - BALLE_RAYON * 2 + BALLE_TOUCHE_MARGE, positionEntite(balle)[1]))
                         
                         if vitesseEntite(balle)[0] <= 0:
-                            modifierVitesse(balle, (VITESSE_HORIZONTALE*direction_chute, vitesseEntite(balle)[1]))
+                            modifierVitesse(balle, (gestionVitesse()*direction_chute, vitesseEntite(balle)[1]))
                         
                         if not est_sur_eau:
                             modifierAcceleration(balle, (ACCELERATION_HORIZONTALE, -ACCELERATION_GRAVITATIONNELLE))
                             
                     elif positionEntite(balle)[0] < BALLE_POSITION:
-                        modifierVitesse(balle, (VITESSE_HORIZONTALE, vitesseEntite(balle)[1]))
+                        modifierVitesse(balle, (gestionVitesse(), vitesseEntite(balle)[1]))
                     elif etype == TYPE_BROKEN_BRICK:
                         modifierImage(entite, IMAGE_BROKEN_BRICK)
                         modifierPosition(balle, (positionEntite(balle)[0] + BALLE_TOUCHE_MARGE, positionEntite(entite)[1] - BALLE_RAYON))
@@ -875,25 +903,25 @@ def collisionBalle():
                     if not direction_chute:
                         
                         modifierPosition(balle, (xb, positionEntite(entite)[1]+tailleEntite(entite)[1]-BALLE_TOUCHE_MARGE))
-                        modifierVitesse(balle, (VITESSE_HORIZONTALE*direction_chute,0))
+                        modifierVitesse(balle, (gestionVitesse()*direction_chute,0))
                         modifierAcceleration(balle, (0,0))
                         
                         if positionEntite(entite)[0] - BALLE_TOUCHE_MARGE <= xb:
-                            modifierVitesse(balle, (-VITESSE_HORIZONTALE,0))
+                            modifierVitesse(balle, (-gestionVitesse(),0))
                     elif vaTomber(direction_chute, id_collision, nombre_de_collision):
                         #pour eviter de sauter violement après avoir
                         #été coincé derrière un obstacle
                         if direction_chute < 0:
                             modifierPosition(balle, (positionEntite(entite)[0] - BALLE_RAYON*2 + BALLE_TOUCHE_MARGE, positionEntite(balle)[1]))
-                        modifierVitesse(balle, (VITESSE_HORIZONTALE*direction_chute, vitesseEntite(balle)[1]))
+                        modifierVitesse(balle, (gestionVitesse()*direction_chute, vitesseEntite(balle)[1]))
                             
                     elif positionEntite(balle)[0] < BALLE_POSITION:
-                        modifierVitesse(balle, (VITESSE_HORIZONTALE, vitesseEntite(balle)[1]))
+                        modifierVitesse(balle, (gestionVitesse(), vitesseEntite(balle)[1]))
                         
                 elif etype == TYPE_PIECE:
                     if vitesseEntite(entite)[1] == 0:
                         modifierScorePiece(scene, scorePieceScene(scene)+1)
-                    modifierVitesse(entite, (-VITESSE_HORIZONTALE, VITESSE_VERTICALE))
+                    modifierVitesse(entite, (-gestionVitesse(), VITESSE_VERTICALE))
                 elif etype == TYPE_VIE:
                     endormirEntite(entite)
                     if nombreDeVieScene(scene) < NOMBRE_DE_VIE_MAXIMUM:
@@ -907,12 +935,12 @@ def collisionBalle():
                         direction_vitesse = -1
                         modifierPosition(balle, (positionEntite(entite)[0] - BALLE_RAYON*2 + BALLE_TOUCHE_MARGE, positionEntite(balle)[1]))
 
-                    modifierVitesse(balle, (VITESSE_HORIZONTALE*direction_vitesse, vitesseEntite(balle)[1]))
+                    modifierVitesse(balle, (gestionVitesse()*direction_vitesse, vitesseEntite(balle)[1]))
                 
                 elif etype == TYPE_PIECE:
                     if vitesseEntite(entite)[1] == 0:
                         modifierScorePiece(scene, scorePieceScene(scene)+1)
-                    modifierVitesse(entite, (-VITESSE_HORIZONTALE, VITESSE_VERTICALE))
+                    modifierVitesse(entite, (-gestionVitesse(), VITESSE_VERTICALE))
                 
                 elif etype == TYPE_VIE:
                     endormirEntite(entite)
@@ -1119,7 +1147,7 @@ def afficherEcranDeJeu(maintenant):
             change_pose = False
         
         if not estGameOver(scene):
-            modifierScoreScene(scene, scoreScene(scene) + (maintenant-dernierTempsJeuxScene(scene))*VITESSE_HORIZONTALE)
+            modifierScoreScene(scene, scoreScene(scene) + (maintenant-dernierTempsJeuxScene(scene))*gestionVitesse())
         modifierDernierTempsJeuxScene(scene, maintenant)
     else:
         miseAJourDernierTemps(scene, maintenant)
