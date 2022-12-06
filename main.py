@@ -101,6 +101,8 @@ NIVEAU_WALL_DIMENSIONS = 50
 WALL_MARGE = 15
 
 
+SCORE_FILE_PATH = "./file/score.txt"
+
 # Utilisé pour la gestion des écrans
 
 ECRAN_ACCUEIL = 1
@@ -139,6 +141,7 @@ def repere_vers_pygame(position, taille):
 def nouvelleScene(ecran = ECRAN_ACCUEIL, niveau = NIVEAU_FACILE):
     return {
         "entites": [],
+        "reserve": [],
         "tempsDepart": None, #Va contenir le temps de depart de chaque scene
         "dernierTempsJeu": pygame.time.get_ticks(),
         "dernierTempsSaut": None,
@@ -297,6 +300,20 @@ def afficherScene(scene):
 
 def ajouterEntite(scene, entitee):
     scene["entites"].append(entitee)
+
+def sceneReserve(scene):
+    return scene["reserve"]
+
+def ajouterEntiteReserve(scene, entitee):
+    sceneReserve(scene).append(entitee)
+
+def tailleReserve(scene):
+    return len(sceneReserve(scene))
+
+def prendreDansReserve(scene):
+    if tailleReserve(scene) > 0:
+        return sceneReserve(scene).pop(0)
+    return None
     
 def listEntite(scene):
     return scene["entites"]
@@ -687,14 +704,31 @@ def remplirScene(scene, maintenant):
             derniere_taille = tailleEntite(dernier)
     
     while derniere_position[0] + derniere_taille[0] < FENETRE_LARGEUR + FENETRE_MARGE_EXTERNE:
-        for entite in generer_entite(dernier, derniere_position, derniere_taille, maintenant):
-            entite = reveillerEntite(entite)
-            ajouterEntite(scene, entite)
-        
-            if require.count(typeEntite(entite)) != 0:
-                dernier = entite
-                derniere_position = positionEntite(dernier)
-                derniere_taille = tailleEntite(dernier)
+        if tailleReserve(scene) > 0:
+            entite = prendreDansReserve(scene)
+            
+            while entite:
+                ajouterEntite(scene, entite)
+                
+                if require.count(typeEntite(entite)) != 0:
+                    dernier = entite
+                    derniere_position = positionEntite(dernier)
+                    derniere_taille = tailleEntite(dernier)
+                    
+                entite = prendreDansReserve(scene)
+        else:
+            for entite in generer_entite(dernier, derniere_position, derniere_taille, maintenant):
+                entite = reveillerEntite(entite)
+            
+                if derniere_position[0] + derniere_taille[0] > FENETRE_LARGEUR + FENETRE_MARGE_EXTERNE:
+                    ajouterEntiteReserve(scene, entite)
+                else:
+                    ajouterEntite(scene, entite) 
+
+                if require.count(typeEntite(entite)) != 0:
+                    dernier = entite
+                    derniere_position = positionEntite(dernier)
+                    derniere_taille = tailleEntite(dernier)
  
 def mru_vitesse(vitesse, acceleration, dt):
     vx0, vy0 = vitesse
@@ -767,6 +801,8 @@ def afficheEntite(scene):
             if x + w <= FENETRE_LARGEUR + FENETRE_MARGE_EXTERNE:
                 y -= cameraPositionScene(scene)
                 FENETRE.blit(imageEntite(entite), repere_vers_pygame((x, y), (w, h)))
+    
+    print(nombreElementScene(scene))
 
 def creerImage(path, taille):
     return pygame.transform.scale(pygame.image.load(path).convert_alpha(FENETRE), taille) 
@@ -960,7 +996,27 @@ def collisionBalle():
         if positionEntite(balle)[1] - FENETRE_HAUTEUR + FENETRE_MARGE_INTERNE >= 0:
             modifierCameraPositionScene(scene, positionEntite(balle)[1] - FENETRE_HAUTEUR + FENETRE_MARGE_INTERNE)
             
-    
+
+def lire_score(chemin):
+    liste_score = []
+    with open(chemin, 'r') as fichier:
+        ligne = fichier.readline()
+        for elem in ligne.split(" "):
+            if elem !='':
+                liste_score.append(float(elem))
+        return(liste_score)
+        
+def ajout_score(scr, scr_pieces, chemin):
+    #compare le nouveau score passé en paramètre avec le score enregistré dans le fichier dont le chemin est donné en paramètre, 
+    #et remplace le code enregistré dans le fichier par le nouveau code dans le cas où le nouveau code est meilleur
+    with open(chemin, 'w+') as fichier:
+        scores = lire_score(chemin)
+        if len(scores)==0:
+            fichier.write(str(scr)+" "+str(scr_pieces))
+        elif scores[0]<scr:
+            fichier.truncate()
+            fichier.write(str(scr)+" "+str(scr_pieces))
+
 def dessinerTableauDeBord(maintenant):
     #Affichage du score du au parcour
     FENETRE.blit(IMAGE_BALLE_TABLEAU_DE_BORD, repere_vers_pygame((30, FENETRE_HAUTEUR * 0.9), (IMAGE_TABLEAU_DE_BORD_LARGEUR, IMAGE_TABLEAU_DE_BORD_HAUTEUR)))
@@ -1059,6 +1115,22 @@ def dessinerFadeEcran(message = ""):
     y = (FENETRE_HAUTEUR - taille.height)/2
     
     surface.blit(image, repere_vers_pygame((x, y), (taille.width, taille.height)))
+    
+    score_message = ""
+    
+    if estEnPause(scene):
+        score_message = "Best Score: {0:.1f} | Coins: {1}".format(scoreScene(scene), scorePieceScene(scene))
+    elif estGameOver(scene):
+        best_score = lire_score(SCORE_FILE_PATH)
+        score_message = "Best Score: {0:.1f} | Coins: {1}".format(best_score[0], best_score[1])
+    
+    if len(score_message) > 0:
+        image = police_fade_screen.render(score_message, True, BLANC)
+        y -= taille.height
+        taille = image.get_rect() 
+        x = (FENETRE_LARGEUR - taille.width)/2
+        surface.blit(image, repere_vers_pygame((x, y), (taille.width, taille.height)))
+    
     FENETRE.blit(surface, repere_vers_pygame((0, 0), (FENETRE_LARGEUR, FENETRE_HAUTEUR)))
     
     image = police_fade_screen.render("[espace] pour commencer le jeu et sauter", True, BLANC)
@@ -1171,6 +1243,8 @@ def afficherEcranDeJeu(maintenant):
             modifierNombreDeVie(scene, nombreDeVieScene(scene)-1)
             initialiserEcranJeu(conserver_score=True, conserver_dernier_temps=True)
         else:
+            if estGameOver(scene) == False:
+                ajout_score(scoreScene(scene), scorePieceScene(scene), SCORE_FILE_PATH)
             mettreEnGameOver(scene)
             dessinerFadeEcran("GAME OVER")
 
@@ -1184,7 +1258,7 @@ def traiterEntreeEcranDeJeu(evenement, maintenant):
             if evenement.key == pygame.K_SPACE:
                 mettreEnJeu(scene)
                 modifierDernierTempsJeuxScene(scene, pygame.time.get_ticks())
-        else:   
+        elif not estGameOver(scene):   
             if evenement.key == pygame.K_SPACE:
                 modifierDernierTempsToucheScene(scene, pygame.time.get_ticks())
             elif evenement.key == pygame.K_ESCAPE:
