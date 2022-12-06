@@ -175,6 +175,7 @@ def niveauActuel(scene):
 
 def modifierNiveau(scene, niveau):
     scene["niveau"] = niveau
+    miseAJourVitesseHorizontale()
     
 def ecranActuel(scene):
     return scene.get("ecran")
@@ -786,6 +787,15 @@ def miseAJourDernierTemps(scene, maintenant):
         for entite in listEntite(scene):
             modifierDernierTemps(entite, maintenant)
             
+def miseAJourVitesseHorizontale():
+    nbr = nombreElementScene(scene)
+    
+    if nbr > 0:
+        for entite in listEntite(scene):
+            if typeEntite(entite) != TYPE_BALLE:
+                vy = vitesseEntite(entite)[1]
+                modifierVitesse(entite, (-gestionVitesse(), vy))
+            
 
 def afficheEntite(scene):
     entites = listEntite(scene)
@@ -797,8 +807,6 @@ def afficheEntite(scene):
             if x + w <= FENETRE_LARGEUR + FENETRE_MARGE_EXTERNE:
                 y -= cameraPositionScene(scene)
                 FENETRE.blit(imageEntite(entite), repere_vers_pygame((x, y), (w, h)))
-    
-    print(nombreElementScene(scene))
 
 def creerImage(path, taille):
     return pygame.transform.scale(pygame.image.load(path).convert_alpha(FENETRE), taille) 
