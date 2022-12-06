@@ -706,16 +706,12 @@ def remplirScene(scene, maintenant):
     while derniere_position[0] + derniere_taille[0] < FENETRE_LARGEUR + FENETRE_MARGE_EXTERNE:
         if tailleReserve(scene) > 0:
             entite = prendreDansReserve(scene)
-            
-            while entite:
-                ajouterEntite(scene, entite)
+            ajouterEntite(scene, entite)
                 
-                if require.count(typeEntite(entite)) != 0:
-                    dernier = entite
-                    derniere_position = positionEntite(dernier)
-                    derniere_taille = tailleEntite(dernier)
-                    
-                entite = prendreDansReserve(scene)
+            if require.count(typeEntite(entite)) != 0:
+                dernier = entite
+                derniere_position = positionEntite(dernier)
+                derniere_taille = tailleEntite(dernier)
         else:
             for entite in generer_entite(dernier, derniere_position, derniere_taille, maintenant):
                 entite = reveillerEntite(entite)
