@@ -1248,7 +1248,7 @@ def traiterEntreeEcranNiveau(evenement):
     if evenement.type == pygame.KEYDOWN:
         
         if evenement.key == pygame.K_SPACE:
-            stop_musique(500)
+            stop_musique(200)
             initialiserEcranJeu()
             
         elif evenement.key == pygame.K_ESCAPE:
@@ -1289,9 +1289,7 @@ def initialiserMusique():
     pygame.mixer.init()
     
     type_music = 'accueil'
-    pygame.mixer.music.load(MUSIQUE_ACCUEIL) # musique
-    pygame.mixer.music.play(-1)
-    pygame.mixer.music.set_volume(0.2)
+    start_musique(MUSIQUE_ACCUEIL) # musique
     sound_piece = pygame.mixer.Channel(1)
     sound_saut = pygame.mixer.Channel(2)
     sound_collision = pygame.mixer.Channel(3)
@@ -1299,6 +1297,8 @@ def initialiserMusique():
 def start_musique(path):
     pygame.mixer.music.load(path)
     pygame.mixer.music.play(-1)
+    if path == MUSIQUE_JEU:
+        pygame.mixer.music.set_volume(0.2)
 
 def stop_musique(temps):
     pygame.mixer.music.fadeout(temps)
@@ -1345,16 +1345,16 @@ IMAGES_BALLE = []
 for img_id in range(0, 360, 15):
     IMAGES_BALLE.append(creerBalleImage("images/ball/ball.{0}.png".format(img_id)))
 
-MUSIQUE_JEU = "music/track_2.mp3" # chemin vers musique jeu
-MUSIQUE_ACCUEIL = "music/track_1.mp3"  # chemin vers musique accueil
-MUSIQUE_GAMEOVER = "music/accueil.mp3" # chemin vers musique gameover
+MUSIQUE_JEU = "music/track_1.mp3" # chemin vers musique jeu
+MUSIQUE_ACCUEIL = "music/track_2.mp3"  # chemin vers musique accueil
+MUSIQUE_GAMEOVER = "music/track_2.mp3" # chemin vers musique gameover
 
 SON_PIECE = creer_son("music/piece.mp3", 0.3) # musique
 SON_SAUT = creer_son("music/jump.mp3", 0.5) # musique
-SON_COLLISION_SOL = creer_son("music/sol.mp3", 1) # musique
-SON_COLLISION_BRIQUE = creer_son("music/brick_col.mp3", 1) # musique
-SON_COLLISION_EAU = creer_son("music/splash.mp3", 1) # musique
-SON_BRIQUE_CASSE = creer_son("music/brick_break.mp3", 1) # musique
+SON_COLLISION_SOL = creer_son("music/sol.mp3", 0.8) # musique
+SON_COLLISION_BRIQUE = creer_son("music/brick_col.mp3", 0.8) # musique
+SON_COLLISION_EAU = creer_son("music/splash.mp3", 0.8) # musique
+SON_BRIQUE_CASSE = creer_son("music/brick_break.mp3", 0.8) # musique
 
 scene = None #Va contenir la scene de chaque écran
 horloge = pygame.time.Clock()
