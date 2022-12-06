@@ -920,8 +920,8 @@ def collisionBalle():
                         #été coincé derrière un obstacle
                         if direction_chute < 0:
                             modifierPosition(balle, (positionEntite(entite)[0] - BALLE_RAYON*2 + BALLE_TOUCHE_MARGE, positionEntite(balle)[1]))
+                            playSound(SON_COLLISION_EAU)
                         modifierVitesse(balle, (gestionVitesse()*direction_chute, vitesseEntite(balle)[1]))
-                        playSound(SON_COLLISION_EAU)
                             
                     elif positionEntite(balle)[0] < BALLE_POSITION:
                         modifierVitesse(balle, (gestionVitesse(), vitesseEntite(balle)[1]))
@@ -949,8 +949,8 @@ def collisionBalle():
                 elif etype == TYPE_PIECE:
                     if vitesseEntite(entite)[1] == 0:
                         modifierScorePiece(scene, scorePieceScene(scene)+1)
+                        playSound(SON_PIECE)
                     modifierVitesse(entite, (-gestionVitesse(), VITESSE_VERTICALE))
-                    playSound(SON_PIECE)
                 
                 elif etype == TYPE_VIE:
                     endormirEntite(entite)
@@ -1178,12 +1178,14 @@ def afficherEcranDeJeu(maintenant):
         dessinerFadeEcran("PAUSE")
     elif not estEntite(scene, balleScene(scene)):
         if nombreDeVieScene(scene):
+            playSound(SON_ERREUR)
             modifierNombreDeVie(scene, nombreDeVieScene(scene)-1)
             initialiserEcranJeu(conserver_score=True, conserver_dernier_temps=True)
         else:
+            if not estGameOver(scene):
+                start_musique(MUSIQUE_GAMEOVER)
             mettreEnGameOver(scene)
             dessinerFadeEcran("GAME OVER")
-            start_musique(MUSIQUE_GAMEOVER)
 
 def traiterEntreeEcranDeJeu(evenement, maintenant):
     if evenement.type == pygame.KEYDOWN:
@@ -1296,7 +1298,10 @@ def initialiserMusique():
 
 def start_musique(path):
     pygame.mixer.music.load(path)
-    pygame.mixer.music.play(-1)
+    if path == MUSIQUE_GAMEOVER:
+        pygame.mixer.music.play(1)
+    else:
+        pygame.mixer.music.play(-1)
     if path == MUSIQUE_JEU:
         pygame.mixer.music.set_volume(0.2)
 
@@ -1347,7 +1352,7 @@ for img_id in range(0, 360, 15):
 
 MUSIQUE_JEU = "music/track_1.mp3" # chemin vers musique jeu
 MUSIQUE_ACCUEIL = "music/track_2.mp3"  # chemin vers musique accueil
-MUSIQUE_GAMEOVER = "music/track_2.mp3" # chemin vers musique gameover
+MUSIQUE_GAMEOVER = "music/track_3.mp3" # chemin vers musique gameover
 
 SON_PIECE = creer_son("music/piece.mp3", 0.3) # musique
 SON_SAUT = creer_son("music/jump.mp3", 0.5) # musique
@@ -1355,6 +1360,7 @@ SON_COLLISION_SOL = creer_son("music/sol.mp3", 0.8) # musique
 SON_COLLISION_BRIQUE = creer_son("music/brick_col.mp3", 0.8) # musique
 SON_COLLISION_EAU = creer_son("music/splash.mp3", 0.8) # musique
 SON_BRIQUE_CASSE = creer_son("music/brick_break.mp3", 0.8) # musique
+SON_ERREUR = creer_son("music/erreur.mp3", 1) # musique
 
 scene = None #Va contenir la scene de chaque écran
 horloge = pygame.time.Clock()
