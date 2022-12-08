@@ -1350,17 +1350,17 @@ IMAGES_BALLE = []
 for img_id in range(0, 360, 15):
     IMAGES_BALLE.append(creerBalleImage("images/ball/ball.{0}.png".format(img_id)))
 
-MUSIQUE_JEU = "music/track_1.mp3" # chemin vers musique jeu
-MUSIQUE_ACCUEIL = "music/track_2.mp3"  # chemin vers musique accueil
-MUSIQUE_GAMEOVER = "music/track_3.mp3" # chemin vers musique gameover
+MUSIQUE_JEU = "music/track_1.wav" # chemin vers musique jeu
+MUSIQUE_ACCUEIL = "music/track_2.wav"  # chemin vers musique accueil
+MUSIQUE_GAMEOVER = "music/track_3.wav" # chemin vers musique gameover
 
-SON_PIECE = creer_son("music/piece.mp3", 0.3) # musique
-SON_SAUT = creer_son("music/jump.mp3", 0.5) # musique
-SON_COLLISION_SOL = creer_son("music/sol.mp3", 0.8) # musique
-SON_COLLISION_BRIQUE = creer_son("music/brick_col.mp3", 0.8) # musique
-SON_COLLISION_EAU = creer_son("music/splash.mp3", 0.8) # musique
-SON_BRIQUE_CASSE = creer_son("music/brick_break.mp3", 0.8) # musique
-SON_ERREUR = creer_son("music/erreur.mp3", 1) # musique
+SON_PIECE = creer_son("music/piece.wav", 0.3) # musique
+SON_SAUT = creer_son("music/jump.wav", 0.5) # musique
+SON_COLLISION_SOL = creer_son("music/sol.wav", 0.8) # musique
+SON_COLLISION_BRIQUE = creer_son("music/brick_col.wav", 0.8) # musique
+SON_COLLISION_EAU = creer_son("music/splash.wav", 0.8) # musique
+SON_BRIQUE_CASSE = creer_son("music/brick_break.wav", 0.8) # musique
+SON_ERREUR = creer_son("music/erreur.wav", 1) # musique
 
 scene = None #Va contenir la scene de chaque écran
 horloge = pygame.time.Clock()
