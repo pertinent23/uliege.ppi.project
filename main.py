@@ -810,10 +810,6 @@ def afficheEntite(scene):
 
 def creerImage(path, taille):
     return pygame.transform.scale(pygame.image.load(path).convert_alpha(FENETRE), taille) 
-    
-
-def creerMusique(path = ""):
-    return pygame.mixer.Sound(path)
 
 def generer_vitesse_saut():
     temps = pygame.time.get_ticks() - dernierTempsToucheScene(scene)
@@ -1258,13 +1254,9 @@ def afficherEcranDeJeu(maintenant):
             modifierNombreDeVie(scene, nombreDeVieScene(scene)-1)
             initialiserEcranJeu(conserver_score=True, conserver_dernier_temps=True)
         else:
-<<<<<<< HEAD
             if not estGameOver(scene):
-                start_musique(MUSIQUE_GAMEOVER)
-=======
-            if estGameOver(scene) == False:
                 ajout_score(scoreScene(scene), scorePieceScene(scene), SCORE_FILE_PATH)
->>>>>>> 94328d3 (après la  gestion de la surcharge)
+                start_musique(MUSIQUE_GAMEOVER)
             mettreEnGameOver(scene)
             dessinerFadeEcran("GAME OVER")
 
@@ -1279,12 +1271,8 @@ def traiterEntreeEcranDeJeu(evenement, maintenant):
             if evenement.key == pygame.K_SPACE:
                 mettreEnJeu(scene)
                 modifierDernierTempsJeuxScene(scene, pygame.time.get_ticks())
-<<<<<<< HEAD
                 start_musique(MUSIQUE_JEU)
-        else:   
-=======
         elif not estGameOver(scene):   
->>>>>>> 94328d3 (après la  gestion de la surcharge)
             if evenement.key == pygame.K_SPACE:
                 modifierDernierTempsToucheScene(scene, pygame.time.get_ticks())
             elif evenement.key == pygame.K_ESCAPE:
