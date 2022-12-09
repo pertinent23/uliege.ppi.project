@@ -853,8 +853,7 @@ def creer_son(path, volume):
 
 def playSound(son):
     if son == SON_PIECE:
-        if not sound_piece.get_busy():
-            sound_piece.play(son)
+        sound_piece.play(son)
     elif son == SON_SAUT:
         if not sound_saut.get_busy():
             sound_saut.play(son)
