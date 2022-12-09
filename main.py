@@ -853,11 +853,14 @@ def creer_son(path, volume):
 
 def playSound(son):
     if son == SON_PIECE:
-        sound_piece.play(son)
+        if not sound_piece.get_busy():
+            sound_piece.play(son)
     elif son == SON_SAUT:
-        sound_saut.play(son)
+        if not sound_saut.get_busy():
+            sound_saut.play(son)
     else:
-        sound_collision.play(son)
+        if not sound_collision.get_busy():
+            sound_collision.play(son)
 
 # Gestion des collisions
 
