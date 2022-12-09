@@ -24,8 +24,8 @@ JAUNE = (255, 200, 0)
 
 # Les autres constantes utiles dans notre code
 
-FENETRE_LARGEUR = 1000 #en px
-FENETRE_HAUTEUR = 600 #en px
+FENETRE_LARGEUR = 800 #en px
+FENETRE_HAUTEUR = 550 #en px
 
 FENETRE_MARGE_EXTERNE = 200 #en px
 FENETRE_MARGE_INTERNE = 175 #en px
@@ -810,10 +810,6 @@ def afficheEntite(scene):
 
 def creerImage(path, taille):
     return pygame.transform.scale(pygame.image.load(path).convert_alpha(FENETRE), taille) 
-    
-
-def creerMusique(path = ""):
-    return pygame.mixer.Sound(path)
 
 def generer_vitesse_saut():
     temps = pygame.time.get_ticks() - dernierTempsToucheScene(scene)
@@ -826,6 +822,42 @@ def generer_vitesse_saut():
     modifierDernierTempsToucheScene(scene, None)
     
     return VITESSE_VERTICALE * (temps/(TEMPS_DE_TOUCHE_MAXIMALE/2))
+
+# Musique
+
+def initialiserMusique():
+    global sound_piece, sound_saut, sound_collision
+    pygame.mixer.init()
+    
+    start_musique(MUSIQUE_ACCUEIL)
+    sound_piece = pygame.mixer.Channel(1)
+    sound_saut = pygame.mixer.Channel(2)
+    sound_collision = pygame.mixer.Channel(3)
+
+def start_musique(path):
+    pygame.mixer.music.load(path)
+    if path == MUSIQUE_GAMEOVER:
+        pygame.mixer.music.play(1)
+    else:
+        pygame.mixer.music.play(-1)
+    if path == MUSIQUE_JEU:
+        pygame.mixer.music.set_volume(0.2)
+
+def stop_musique(temps):
+    pygame.mixer.music.fadeout(temps)
+
+def creer_son(path, volume):
+    son = pygame.mixer.Sound(path)
+    son.set_volume(volume)
+    return son
+
+def playSound(son):
+    if son == SON_PIECE:
+        sound_piece.play(son)
+    elif son == SON_SAUT:
+        sound_saut.play(son)
+    else:
+        sound_collision.play(son)
 
 # Gestion des collisions
 
@@ -840,6 +872,7 @@ def faireSauterBalle(maintenant):
         modifierVitesse(balleScene(scene), (vx, generer_vitesse_saut()))
         modifierAcceleration(balleScene(scene), (ax,-ACCELERATION_GRAVITATIONNELLE))
         modifierDernierTempsSautScene(scene, None)
+        playSound(SON_SAUT)
     else:
         modifierDernierTempsSautScene(scene, maintenant)
 
@@ -905,6 +938,10 @@ def collisionBalle():
                         modifierPosition(balle, (xb, positionEntite(entite)[1]+tailleEntite(entite)[1]-BALLE_TOUCHE_MARGE))
                         modifierVitesse(balle, (vitesseEntite(balle)[0], 0))
                         modifierAcceleration(balle, (0,0))
+                        if etype == TYPE_SOL:
+                            playSound(SON_COLLISION_SOL)
+                        else:
+                            playSound(SON_COLLISION_BRIQUE)
                     else:
                         if positionEntite(balle)[0] < BALLE_POSITION:
                             #Pour que la balle retrouve
@@ -934,6 +971,7 @@ def collisionBalle():
                         modifierImage(entite, IMAGE_BROKEN_BRICK)
                         modifierPosition(balle, (positionEntite(balle)[0] + BALLE_TOUCHE_MARGE, positionEntite(entite)[1] - BALLE_RAYON))
                         modifierAcceleration(balle, (ACCELERATION_HORIZONTALE, -ACCELERATION_GRAVITATIONNELLE))
+                        playSound(SON_BRIQUE_CASSE)
                     
                         
                 elif etype == TYPE_EAU:
@@ -945,6 +983,7 @@ def collisionBalle():
                         modifierPosition(balle, (xb, positionEntite(entite)[1]+tailleEntite(entite)[1]-BALLE_TOUCHE_MARGE))
                         modifierVitesse(balle, (gestionVitesse()*direction_chute,0))
                         modifierAcceleration(balle, (0,0))
+                        playSound(SON_COLLISION_EAU)
                         
                         if positionEntite(entite)[0] - BALLE_TOUCHE_MARGE <= xb:
                             modifierVitesse(balle, (-gestionVitesse(),0))
@@ -953,10 +992,12 @@ def collisionBalle():
                         #été coincé derrière un obstacle
                         if direction_chute < 0:
                             modifierPosition(balle, (positionEntite(entite)[0] - BALLE_RAYON*2 + BALLE_TOUCHE_MARGE, positionEntite(balle)[1]))
+                            playSound(SON_COLLISION_EAU)
                         modifierVitesse(balle, (gestionVitesse()*direction_chute, vitesseEntite(balle)[1]))
                             
                     elif positionEntite(balle)[0] < BALLE_POSITION:
                         modifierVitesse(balle, (gestionVitesse(), vitesseEntite(balle)[1]))
+                        playSound(SON_COLLISION_EAU)
                         
                 elif etype == TYPE_PIECE:
                     if vitesseEntite(entite)[1] == 0:
@@ -980,6 +1021,7 @@ def collisionBalle():
                 elif etype == TYPE_PIECE:
                     if vitesseEntite(entite)[1] == 0:
                         modifierScorePiece(scene, scorePieceScene(scene)+1)
+                        playSound(SON_PIECE)
                     modifierVitesse(entite, (-gestionVitesse(), VITESSE_VERTICALE))
                 
                 elif etype == TYPE_VIE:
@@ -1244,11 +1286,13 @@ def afficherEcranDeJeu(maintenant):
         dessinerFadeEcran("PAUSE")
     elif not estEntite(scene, balleScene(scene)):
         if nombreDeVieScene(scene):
+            playSound(SON_ERREUR)
             modifierNombreDeVie(scene, nombreDeVieScene(scene)-1)
             initialiserEcranJeu(conserver_score=True, conserver_dernier_temps=True)
         else:
-            if estGameOver(scene) == False:
+            if not estGameOver(scene):
                 ajout_score(scoreScene(scene), scorePieceScene(scene), SCORE_FILE_PATH)
+                start_musique(MUSIQUE_GAMEOVER)
             mettreEnGameOver(scene)
             dessinerFadeEcran("GAME OVER")
 
@@ -1256,12 +1300,14 @@ def traiterEntreeEcranDeJeu(evenement, maintenant):
     if evenement.type == pygame.KEYDOWN:
         if (estEnPause(scene) or estGameOver(scene) or not estEnJeu(scene)) and evenement.key == pygame.K_BACKSPACE:
             modifierGameOver(scene, False)
+            start_musique(MUSIQUE_ACCUEIL)
             initialiserEcranAccueil()
                 
         if not estEnJeu(scene):
             if evenement.key == pygame.K_SPACE:
                 mettreEnJeu(scene)
                 modifierDernierTempsJeuxScene(scene, pygame.time.get_ticks())
+                start_musique(MUSIQUE_JEU)
         elif not estGameOver(scene):   
             if evenement.key == pygame.K_SPACE:
                 modifierDernierTempsToucheScene(scene, pygame.time.get_ticks())
@@ -1313,6 +1359,7 @@ def traiterEntreeEcranNiveau(evenement):
     if evenement.type == pygame.KEYDOWN:
         
         if evenement.key == pygame.K_SPACE:
+            stop_musique(200)
             initialiserEcranJeu()
             
         elif evenement.key == pygame.K_ESCAPE:
@@ -1375,6 +1422,18 @@ IMAGES_BALLE = []
 for img_id in range(0, 360, 15):
     IMAGES_BALLE.append(creerBalleImage("images/ball/ball.{0}.png".format(img_id)))
 
+MUSIQUE_JEU = "music/track_1.wav" # chemin vers musique jeu
+MUSIQUE_ACCUEIL = "music/track_2.wav"  # chemin vers musique accueil
+MUSIQUE_GAMEOVER = "music/track_3.wav" # chemin vers musique gameover
+
+SON_PIECE = creer_son("music/piece.wav", 0.3) # musique
+SON_SAUT = creer_son("music/jump.wav", 0.5) # musique
+SON_COLLISION_SOL = creer_son("music/sol.wav", 0.8) # musique
+SON_COLLISION_BRIQUE = creer_son("music/brick_col.wav", 0.8) # musique
+SON_COLLISION_EAU = creer_son("music/splash.wav", 0.8) # musique
+SON_BRIQUE_CASSE = creer_son("music/brick_break.wav", 0.8) # musique
+SON_ERREUR = creer_son("music/erreur.wav", 1) # musique
+
 scene = None #Va contenir la scene de chaque écran
 horloge = pygame.time.Clock()
 police_tableau_de_bord = pygame.font.SysFont("ubuntu", TABLEAU_DE_BORD_TAILLE_POLICE, True)
@@ -1383,6 +1442,7 @@ police_ecran_de_jeu = pygame.font.SysFont("ubuntu", ECRAN_DE_JEUX_POLICE_TAILLE,
 police_ecran_de_niveau = pygame.font.SysFont("ubuntu", ECRAN_SELECTION_NIVEAU_POLICE_TAILLE, True)
 
 initialiserEcranAccueil()
+initialiserMusique()
 
 while not estFini(scene):
     maintenant = pygame.time.get_ticks()
