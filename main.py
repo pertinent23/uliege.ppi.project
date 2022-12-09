@@ -24,8 +24,8 @@ JAUNE = (255, 200, 0)
 
 # Les autres constantes utiles dans notre code
 
-FENETRE_LARGEUR = 1000 #en px
-FENETRE_HAUTEUR = 600 #en px
+FENETRE_LARGEUR = 800 #en px
+FENETRE_HAUTEUR = 550 #en px
 
 FENETRE_MARGE_EXTERNE = 200 #en px
 FENETRE_MARGE_INTERNE = 175 #en px
@@ -823,6 +823,42 @@ def generer_vitesse_saut():
     
     return VITESSE_VERTICALE * (temps/(TEMPS_DE_TOUCHE_MAXIMALE/2))
 
+# Musique
+
+def initialiserMusique():
+    global sound_piece, sound_saut, sound_collision
+    pygame.mixer.init()
+    
+    start_musique(MUSIQUE_ACCUEIL)
+    sound_piece = pygame.mixer.Channel(1)
+    sound_saut = pygame.mixer.Channel(2)
+    sound_collision = pygame.mixer.Channel(3)
+
+def start_musique(path):
+    pygame.mixer.music.load(path)
+    if path == MUSIQUE_GAMEOVER:
+        pygame.mixer.music.play(1)
+    else:
+        pygame.mixer.music.play(-1)
+    if path == MUSIQUE_JEU:
+        pygame.mixer.music.set_volume(0.2)
+
+def stop_musique(temps):
+    pygame.mixer.music.fadeout(temps)
+
+def creer_son(path, volume):
+    son = pygame.mixer.Sound(path)
+    son.set_volume(volume)
+    return son
+
+def playSound(son):
+    if son == SON_PIECE:
+        sound_piece.play(son)
+    elif son == SON_SAUT:
+        sound_saut.play(son)
+    else:
+        sound_collision.play(son)
+
 # Gestion des collisions
 
 def faireSauterBalle(maintenant):
@@ -1356,43 +1392,6 @@ def traite_entrees(maintenant = 0):
             traiterEntreeEcranAccueil(evenement)
         elif ecranActuel(scene) == ECRAN_SELECTION_NIVEAU:
             traiterEntreeEcranNiveau(evenement)
-
-# Musique
-
-def initialiserMusique():
-    global type_music, sound_piece, sound_saut, sound_collision
-    pygame.mixer.init()
-    
-    type_music = 'accueil'
-    start_musique(MUSIQUE_ACCUEIL) # musique
-    sound_piece = pygame.mixer.Channel(1)
-    sound_saut = pygame.mixer.Channel(2)
-    sound_collision = pygame.mixer.Channel(3)
-
-def start_musique(path):
-    pygame.mixer.music.load(path)
-    if path == MUSIQUE_GAMEOVER:
-        pygame.mixer.music.play(1)
-    else:
-        pygame.mixer.music.play(-1)
-    if path == MUSIQUE_JEU:
-        pygame.mixer.music.set_volume(0.2)
-
-def stop_musique(temps):
-    pygame.mixer.music.fadeout(temps)
-
-def creer_son(path, volume):
-    son = pygame.mixer.Sound(path)
-    son.set_volume(volume)
-    return son
-
-def playSound(son):
-    if son == SON_PIECE:
-        sound_piece.play(son)
-    elif son == SON_SAUT:
-        sound_saut.play(son)
-    else:
-        sound_collision.play(son)
 
 # Initialisation
 pygame.init()
